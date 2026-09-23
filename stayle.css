@@ -1,0 +1,848 @@
+/* ================================================================
+   Messenger Responsive CSS
+   ================================================================ */
+
+   :root {
+    --bg-main: #f4f6f8;
+    --bg-box: #ffffff;
+    --bg-navi: #fafafa;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --border-color: #e2e8f0;
+    --border-sub: #f1f5f9;
+    --bg-chat-input: #f8fafc;
+    --my-bubble-bg: #e0f2fe;
+    --my-bubble-text: #0369a1;
+    --button-color: #0000ff;
+    --button-h-color: #5c5cff;
+}
+
+[data-theme="dark"] {
+    --bg-main: #121214;
+    --bg-box: #1a1a1e;
+    --bg-navi: #16161a;
+    --text-primary: #f8fafc;
+    --text-secondary: #ccd1d7;
+    --border-color: #2a2a32;
+    --border-sub: #353535;
+    --bg-chat-input: #25252c;
+    --my-bubble-bg: #0284c7;
+    --my-bubble-text: #ffffff;
+    --button-color: #000038;
+    --button-h-color: #0000b2;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Nanum Gothic', sans-serif;
+    transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-main);
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+}
+
+.messenger-main {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+header.header {
+    flex-shrink: 0;
+    background: var(--bg-box);
+    padding: 14px 20px;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+}
+
+.menu {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary);
+    font-size: 14pt;
+}
+
+.menu a {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.menu a img,
+.chat-back img {
+    width: 18px;
+    height: 18px;
+}
+
+.theme-toggle-btn {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 16pt;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.mid {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    background: var(--bg-box);
+}
+
+.navi {
+    width: 200px;
+    min-width: 180px;
+    flex: 0 0 200px;
+    background: var(--bg-navi);
+    border-right: 1px solid var(--border-color);
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.navi button,
+.navi .user-chat-btn {
+    width: 100%;
+    min-height: 54px;
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-sub);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: left;
+    overflow: hidden;
+}
+
+.navi button:hover,
+.navi .user-chat-btn:hover {
+    background: var(--border-sub);
+}
+
+.navi .profile,
+.incoming .profile {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    background: #cbd5e1;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.main1 {
+    position: relative;
+    flex: 1 1 auto;
+    width: 0;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    background: var(--bg-box);
+}
+
+.missing,
+.chat-screen {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+}
+
+.missing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    background: var(--bg-box);
+}
+
+.chat-screen {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chat-header {
+    flex: 0 0 44px;
+    height: 44px;
+    background: var(--bg-box);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border-sub);
+    gap: 10px;
+}
+
+.chat-back {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.chat-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: bold;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.chat-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    padding: 16px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--bg-box);
+}
+
+.message-wrapper {
+    display: flex;
+    align-items: flex-start;
+    width: fit-content;
+    max-width: 80%;
+    min-width: 0;
+}
+
+.incoming {
+    align-self: flex-start;
+}
+
+.incoming .message-box {
+    background: var(--border-sub);
+    color: var(--text-primary);
+}
+
+.outgoing {
+    align-self: flex-end;
+    margin-left: auto;
+    max-width: 80%;
+}
+
+.message-box {
+    min-width: 0;
+    max-width: 100%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.outgoing .message-box {
+    background: var(--my-bubble-bg);
+    color: var(--my-bubble-text);
+}
+
+.chat-footer {
+    flex: 0 0 56px;
+    height: 56px;
+    min-width: 0;
+    background: var(--bg-box);
+    border-top: 1px solid var(--border-sub);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 0;
+}
+
+.chat-footer.has-text {
+    gap: 8px;
+}
+
+.chat-input {
+    min-width: 0;
+    flex: 1 1 auto;
+    width: 0;
+    height: 36px;
+    background: var(--bg-chat-input);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 0 14px;
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+    white-space: nowrap;       
+    overflow: hidden;          
+    text-overflow: ellipsis;   
+}
+
+.chat-input::placeholder {
+    color: var(--text-secondary);
+    opacity: .6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.send-button {
+    flex: 0 0 auto;
+    width: 52px;
+    height: 36px;
+    max-width: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    background: var(--button-color);
+    border: none;
+    border-radius: 18px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: max-width .2s cubic-bezier(.25,1,.5,1), opacity .15s ease, padding .2s ease;
+}
+
+.send-button.show {
+    max-width: 52px;
+    padding: 0 10px;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.send-button:hover {
+    background: var(--button-h-color);
+}
+
+/* 코드 뷰어 */
+.message-box.has-code {
+    padding: 0;
+    overflow: hidden;
+    max-width: 100%;
+    background: var(--border-color) !important;
+}
+
+.code-viewer-container {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.code-viewer-header {
+    background: #2d3748;
+    color: #a0aec0;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 6px 12px;
+    letter-spacing: .5px;
+    border-bottom: 1px solid #1a202c;
+}
+
+.code-viewer-container pre {
+    max-width: 100%;
+    background: #1a202c;
+    padding: 12px;
+    margin: 0;
+    overflow-x: auto;
+}
+
+.code-viewer-container code {
+    color: #edf2f7;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre;
+}
+
+.footer,
+.promain1,
+.mains2 {
+    display: none;
+}
+
+/* 로그인 */
+.messenger-main.is-blurred {
+    filter: blur(8px);
+    pointer-events: none;
+    user-select: none;
+}
+
+.login-win {
+    position: fixed;
+    z-index: 9999;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(320px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    padding: 30px 40px;
+    border-radius: 16px;
+    background: var(--bg-main);
+    box-shadow: 0 10px 30px rgba(0,0,0,.2);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+}
+
+.login-win h2 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: var(--text-primary);
+}
+
+.auth-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #eee;
+}
+
+.auth-tabs button {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    font-size: 15px;
+    font-weight: bold;
+    color: var(--button-color);
+    cursor: pointer;
+}
+
+.auth-tabs button.active {
+    color: var(--text-secondary);
+    border-bottom: 2px solid #003671;
+    background-color: var(--button-h-color);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.login-win input {
+    gap: 10px;
+    margin-bottom: 10px;
+    width: 100%;
+    min-width: 0;
+    color: var(--text-primary);
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    background: var(--bg-chat-input);
+}
+
+.login-win input:focus {
+    border-color: #007aff;
+}
+
+.login-win button {
+    margin: 10px;
+    padding: 12px;
+    background: var(--button-color);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* ================================================================
+   알림창 / 모달 UI (새로 추가된 영역)
+   ================================================================ */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.select-ui {
+    background: var(--bg-box);
+    border: 1px solid var(--border-color);
+    width: 90%;
+    max-width: 300px;
+    padding: 24px 20px 20px 20px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-overlay.show .select-ui {
+    transform: scale(1);
+}
+
+.select-inbox {
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+.btn-box {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.btn-y, .btn-n {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-y {
+    background: #048400;
+    color: #ffffff;
+}
+
+.btn-y:hover {
+    background: #114e00;
+}
+
+.btn-n {
+    background: #840000;
+    color: var(--text-primary);
+}
+
+.btn-n:hover {
+    background: #430000;
+    
+}
+
+/* ================================================================
+   태블릿
+   ================================================================ */
+@media (max-width: 700px) {
+    body {
+        padding: 0;
+    }
+
+    header.header {
+        border-radius: 0;
+        padding: 12px 14px;
+    }
+
+    .mid {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+    }
+
+    .navi {
+        width: 32%;
+        min-width: 150px;
+        flex-basis: 32%;
+    }
+
+    .message-wrapper,
+    .outgoing {
+        max-width: 88%;
+    }
+
+    .chat-body {
+        padding: 12px;
+    }
+
+    .code-viewer-container {
+        width: min(320px, 100%);
+    }
+}
+
+/* ================================================================
+   모바일
+   ================================================================ */
+@media (max-width: 520px) {
+    .messenger-main {
+        position: relative;
+    }
+
+    .navi {
+        width: 100%;
+        min-width: 0;
+        flex-basis: 100%;
+        border-right: none;
+    }
+
+    .main1 {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        transform: translateX(100%);
+        transition: transform .22s ease;
+    }
+
+    .messenger-main.mobile-chat-open .main1 {
+        transform: translateX(0);
+    }
+
+    .messenger-main.mobile-chat-open .navi {
+        visibility: hidden;
+    }
+
+    .chat-header {
+        padding: 0 12px;
+    }
+
+    .chat-body {
+        padding: 12px 10px;
+        gap: 10px;
+    }
+
+    .message-wrapper,
+    .outgoing {
+        max-width: 92%;
+    }
+
+    .message-box {
+        font-size: 13px;
+        padding: 9px 12px;
+    }
+
+    .chat-footer {
+        flex-basis: 56px;
+        height: 56px;
+        padding: 0 10px;
+    }
+
+    .code-viewer-container {
+        width: 100%;
+    }
+
+    .code-viewer-container pre {
+        max-width: 100%;
+    }
+
+    .login-win {
+        width: calc(100vw - 28px);
+        padding: 24px 20px;
+    }
+}
+
+/* ================================================================
+   아주 작은 모바일
+   ================================================================ */
+@media (max-width: 360px) {
+    .menu {
+        font-size: 13pt;
+    }
+
+    .navi button,
+    .navi .user-chat-btn {
+        min-height: 50px;
+        padding: 10px 12px;
+    }
+
+    .chat-body {
+        padding: 10px 8px;
+    }
+
+    .chat-footer {
+        padding: 0 8px;
+    }
+
+    .chat-footer.has-text {
+        gap: 5px;
+    }
+
+    .send-button.show {
+        width: 48px;
+        max-width: 48px;
+        padding: 0 8px;
+    }
+}
+
+/* 터치 환경 반응 */
+@media (hover: none) {
+    .navi button:hover,
+    .navi .user-chat-btn:hover {
+        background: transparent;
+    }
+}
+/* ==========================================
+   1. 화면 작아질 때 메인 창 사라짐 방지 (최우선 적용)
+   ========================================== */
+   html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* 페이지 전체 스크롤 방지 */
+}
+
+/* 기존 메인 컨테이너 클래스명이나 id가 무엇이든 꽉 차게 유지 */
+.messenger-main, 
+#messenger-main,
+.container,
+.main-wrapper {
+    display: flex !important; /* 브라우저 크기 줄여도 display:none 방지 */
+    width: 100vw;
+    height: 100vh;
+    min-width: 320px; /* 최소 너비 보장 */
+    position: relative;
+    overflow: hidden;
+}
+
+/* 사이드바(유저 목록) 크기 고정 및 찌그러짐 방지 */
+.sidebar, .navi-container, .navi {
+    min-width: 220px;
+    flex-shrink: 0; /* 우측 채팅창이 넓어져도 사이드바가 찌그러지지 않음 */
+}
+
+/* 우측 채팅 영역 가변 처리 */
+.chat-section, #chat-screen, #missing, .main-chat-area {
+    flex: 1;
+    min-width: 0; /* 내부 콘텐츠(코드 등)가 길어져도 화면 밖으로 튕겨나가지 않음 */
+}
+
+/* 로그인 블러 처리 유지 */
+.is-blurred {
+    filter: blur(8px);
+    pointer-events: none;
+    user-select: none;
+}
+
+
+/* ==========================================
+   2. 전송 버튼 복구 & 호버/클릭 애니메이션
+   ========================================== */
+#send-button, .send-btn, #sendbutton {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    outline: none;
+    flex-shrink: 0;
+    
+    /* 기존 버튼 동작을 살리면서 애니메이션 추가 */
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                background-color 0.2s ease, 
+                box-shadow 0.2s ease, 
+                opacity 0.2s ease;
+}
+
+/* 전송 버튼 마우스 올라갔을 때 (Hover) */
+#send-button:hover, .send-btn:hover, #sendbutton:hover {
+    transform: translateY(-2px) scale(1.05);
+    filter: brightness(1.08); /* 기존 배경색 유지하면서 살짝 밝아짐 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 전송 버튼 클릭할 때 (Active) */
+#send-button:active, .send-btn:active, #sendbutton:active {
+    transform: translateY(0) scale(0.95);
+    filter: brightness(0.95);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+
+/* ==========================================
+   3. 기존 UI 깨짐 원인 모바일 반응형 수치 조정
+   ========================================== */
+@media screen and (max-width: 600px) {
+    /* 모바일 크기일 때 사이드바 숨기고 채팅창 전환하는 로직이 있다면 여기서 통제 */
+    .mobile-chat-open .sidebar,
+    .mobile-chat-open .navi-container {
+        display: none !important;
+    }
+    
+    .mobile-chat-open .chat-section,
+    .mobile-chat-open #chat-screen {
+        display: flex !important;
+        width: 100%;
+    }
+}
+/* 메시지 래퍼: 세로 정렬(column)로 변경하여 닉네임이 말풍선 위에 오도록 설정 */
+.message-wrapper {
+    display: flex;
+    flex-direction: column; /* 💡 수직 정렬로 변경 */
+    align-items: flex-start;
+    max-width: 80%;
+    margin-bottom: 8px;
+}
+
+.outgoing {
+    align-self: flex-end;
+    align-items: flex-end; /* 내 메시지는 우측 정렬 */
+}
+
+.incoming {
+    align-self: flex-start;
+    align-items: flex-start; /* 상대방 메시지는 좌측 정렬 */
+}
+
+/* 상대방 닉네임 스타일 */
+.sender-name {
+    font-size: 11px;
+    color: var(--text-secondary, #8e8e93);
+    margin-bottom: 3px;
+    margin-left: 4px;
+    font-weight: bold;
+}

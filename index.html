@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="theme.js"></script>
+    <link rel="stylesheet" href="stayle.css">
+    <title>메신저</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        .navi-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 220px;
+            border-right: 1px solid var(--border-color);
+            background: var(--bg-navi);
+            flex-shrink: 0;
+            height: 100%;
+        }
+
+        .search-bar {
+            padding: 10px;
+            display: flex;
+            gap: 6px;
+            border-bottom: 1px solid var(--border-sub);
+            flex-shrink: 0;
+        }
+
+        .navi {
+            flex: 1;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .message-sender-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+            font-weight: bold;
+        }
+        
+        .incoming .message-sender-name {
+            margin-left: 2px;
+        }
+
+        /* 여러 줄 입력 가능한 textarea 스타일 보정 */
+        textarea.chat-input {
+            resize: none;
+            height: 36px;
+            max-height: 100px;
+            padding: 8px 14px;
+            line-height: 1.4;
+            font-family: inherit;
+        }
+
+        /* AI 로딩 애니메이션 */
+        .ai-thinking {
+            font-style: italic;
+            color: var(--text-secondary);
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- 배경 메인 메신저 -->
+    <div class="messenger-main is-blurred" id="messenger-main">
+        <header class="header">
+            <div>
+                <menu class="menu">
+                    <a href="/profile.html"><img src="angle-small-left_3916909.png" alt="back"/></a>
+                    <b>메신저</b>
+                    <span id="user-display-name" style="font-size: 13px; color: var(--text-secondary); margin-left: 10px;"></span>
+                    
+                    <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+                        <button id="logout-btn" style="padding: 4px 8px; font-size: 12px; background: #ff3b30; color: white; border: none; border-radius: 6px; cursor: pointer; display: none;">로그아웃</button>
+                        <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+                    </div>
+                </menu>
+            </div>
+        </header>
+
+        <div class="mid">
+            <!-- 좌측 사이드바 -->
+            <div class="navi-container">
+                <div class="search-bar">
+                    <input type="text" id="search-input" class="search-input" placeholder="유저 검색..." style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; outline: none; background: var(--bg-chat-input); color: var(--text-primary);">
+                    <button id="search-btn" class="search-btn" style="padding: 6px 10px; border: none; background: #007aff; color: white; border-radius: 6px; cursor: pointer; font-size: 12px; flex-shrink: 0;">🔍</button>
+                </div>
+                <div class="navi"></div>
+            </div>
+
+            <!-- 우측 채팅 화면 영역 -->
+            <main class="main1">
+                <div class="missing" id="missing">상대를 선택하거나 돋보기로 검색해 주세요.</div>
+                
+                <div class="chat-screen" id="chat-screen" style="display: none;">
+                    <div class="chat-header">
+                        <span class="chat-back" id="chat-back" style="cursor: pointer;"><img src="angle-small-left_3916909.png" alt="back"/></span>
+                        <span class="chat-title">대화방</span>
+                    </div>
+                  
+                    <div class="chat-body" id="chat-body"></div>
+                  
+                    <form class="chat-footer" onsubmit="event.preventDefault();">
+                      <textarea class="chat-input" id="chat-input" placeholder="메시지를 입력하세요... (Shift+Enter 줄바꿈)"></textarea>
+                      <button type="submit" class="send-button" id="send-button">전송</button>
+                    </form>
+                </div>
+            </main>
+        </div>
+        <footer class="footer"></footer>
+    </div>
+
+    <!-- 로그인 모달 레이어 -->
+    <div class="login-win" id="login-win">
+        <!-- 탭 전환 버튼 -->
+        <div class="auth-tabs">
+          <button id="tab-login-btn" class="active" type="button">로그인</button>
+          <button id="tab-register-btn" type="button">회원가입</button>
+        </div>
+      
+        <!-- 1. 로그인 폼 -->
+        <form id="login-form" class="auth-form">
+          <input type="text" id="login-id" placeholder="아이디 입력" required>
+          <div class="password-container">
+            <input type="password" id="login-pw" placeholder="비밀번호 입력">
+            <button type="button" id="login-pw-toggle" class="pw-toggle-btn">🙈</button>
+        </div>
+          <button type="submit">로그인</button>
+        </form>
+      
+        <!-- 2. 회원가입 폼 (기본 숨김) -->
+        <form id="register-form" class="auth-form" style="display: none;">
+            <input type="text" id="reg-id" placeholder="아이디 (영문, 숫자 조합 2자 이상)"  required><!--minlength="2" pattern="^[a-zA-Z0-9]+$"!-->
+            <style>
+/* 1. 비밀번호 input과 토글 버튼을 감싸는 부모 div */
+.password-container { /* 또는 input을 감싸고 있는 부모 태그 */
+    position: relative; /* 💡 absolute의 기준점이 됨 */
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+/* 2. 문제의 토글 버튼 스타일 수정 */
+#pwtoggle, .pw-toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%); /* 💡 위아래 완벽 수직 중앙 정렬 */
+    
+    /* 튀어나오게 만드는 원인들 제거 */
+    background: transparent !important; /* 파란 배경색 제거 */
+    border: none !important;            /* 테두리 제거 */
+    padding: 0 !important;             /* 내부 여백 제거 */
+    margin: 0 !important;
+    width: auto !important;            /* 고정 너비 해제 */
+    height: auto !important;           /* 고정 높이 해제 */
+    
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    z-index: 2;
+}
+            </style>
+            <div class="password-container">
+                <input type="password" id="reg-pw" placeholder="비밀번호 입력">
+                <button type="button" id="reg-pw-toggle" class="pw-toggle-btn">🙈</button>
+            </div>
+          <input type="text" id="reg-name" placeholder="닉네임 (이름)" required>
+          <button type="submit">가입</button>
+        </form>
+    </div>
+
+    <!-- 커스텀 로그아웃 모달 -->
+    <div class="modal-overlay" id="logout-modal">
+        <div class="select-ui">
+            <h2 class="select-inbox">로그아웃 하시겠습니까?</h2>
+            <div class="btn-box">
+                <button class="btn-y" id="confirm-logout-btn" type="button">YES</button>
+                <button class="btn-n" id="cancel-logout-btn" type="button">NO</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
