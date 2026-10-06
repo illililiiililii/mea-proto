@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Gemini API 설정 (모델명 표준화)
-GEMINI_API_KEY = "AQ.Ab8RN6JwlUTDD2vE_Yt8RSYW7gQEn_PoACgknpzwVQOuSUZemA"
+GEMINI_API_KEY = input("your gemini api key: ")
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-3.6-flash')
 
