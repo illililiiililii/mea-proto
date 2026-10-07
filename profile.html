@@ -1,38 +1,408 @@
 <!DOCTYPE html>
-<html lang="en">
-
-    
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <!-- 💡 [핵심] 다른 페이지 이동 시 눈부심(깜빡임) 방지 방어 코드 -->
     <script src="theme.js"></script>
     <link rel="stylesheet" href="stayle.css">
-    <title>sss</title>
-    <link rel="preconnect" href="https://googleapis.com">
-    <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&display=swap" rel="stylesheet">
-    </form>
-</div>
+    <title>프로필 설정</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .avatar-upload-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+        .avatar-upload-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px dashed var(--border-color);
+            background: var(--bg-navi);
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .avatar-upload-btn:hover {
+            background: var(--border-sub);
+            border-color: #007aff;
+        }
+        .api-key-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-navi);
+        }
+        .api-key-section h3 {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin: 0 0 4px 0;
+        }
+        .api-key-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .api-key-row label {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--text-secondary);
+        }
+        .api-key-row input {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-chat-input);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+        .api-key-row input:focus {
+            border-color: #007aff;
+        }
+        .api-key-hint {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body class="profile-page-body">
 
-<body>
-    <header class="header">
-        <div>
-            <menu class="menu">
-                
-                <a href="/index.html"><img src="angle-small-left_3916909.png" /></a><b>message</b>
-                <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
-            </menu>
+    <div class="profile-card">
+        <div class="profile-header-bar">
+            <button class="profile-btn-back" id="back-btn" type="button" style="padding: 6px 12px; font-size: 13px; flex: initial;">← 돌아가기</button>
+            <h2 id="page-title">프로필 설정</h2>
+            <button class="theme-toggle-btn" title="테마 변경">🌙</button>
         </div>
-    </header>
-    <div class="mid">
-        <div class="promain1">
-            <div><img src="angle-small-left_3916909.png" ></div>
-            <div>profile name</div>
-            <button>1:1 chat</button>
-            <button>tnwjd</button>
+
+        <!-- 프로필 사진 -->
+        <div class="profile-avatar-large" id="avatar-display">
+            <img id="avatar-img-preview" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" alt="avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=user'">
         </div>
-    <div>
+
+        <!-- 이미지 파일 업로드 -->
+        <div class="avatar-upload-area" id="avatar-upload-area">
+            <button type="button" class="avatar-upload-btn" id="avatar-upload-btn">사진 업로드 (PNG, JPG, GIF)</button>
+            <input type="file" id="avatar-file-input" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;">
+            <span id="avatar-upload-status" style="font-size: 11px; color: var(--text-secondary);"></span>
+        </div>
+
+        <!-- 프리셋 (URL 기반) -->
+        <div class="avatar-presets" id="avatar-presets">
+            <button type="button" class="avatar-opt" data-url="https://api.dicebear.com/7.x/bottts/svg?seed=Robot">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Robot" alt="robot">
+            </button>
+            <button type="button" class="avatar-opt" data-url="https://api.dicebear.com/7.x/bottts/svg?seed=Cat">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Cat" alt="cat">
+            </button>
+            <button type="button" class="avatar-opt" data-url="https://api.dicebear.com/7.x/adventurer/svg?seed=Alex">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Alex" alt="alex">
+            </button>
+            <button type="button" class="avatar-opt" data-url="https://api.dicebear.com/7.x/adventurer/svg?seed=Emma">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Emma" alt="emma">
+            </button>
+            <button type="button" class="avatar-opt" data-url="https://api.dicebear.com/7.x/adventurer/svg?seed=Liam">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Liam" alt="liam">
+            </button>
+            <button type="button" class="avatar-opt" data-url="https://api.dicebear.com/7.x/adventurer/svg?seed=Sophia">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Sophia" alt="sophia">
+            </button>
+        </div>
+
+        <form id="profile-form" style="width: 100%; display: flex; flex-direction: column; gap: 14px;">
+            <div class="profile-field-group">
+                <label>아이디 (계정)</label>
+                <input type="text" id="prof-user-id" readonly style="opacity: 0.7; cursor: not-allowed;">
+            </div>
+
+            <div class="profile-field-group">
+                <label>닉네임</label>
+                <input type="text" id="prof-user-name" placeholder="닉네임을 입력하세요" required>
+            </div>
+
+            <div class="profile-field-group">
+                <label>상태 메시지</label>
+                <textarea id="prof-status-msg" rows="2" placeholder="상태 메시지를 입력하세요"></textarea>
+            </div>
+
+            <div class="profile-field-group" id="avatar-url-group">
+                <label>프로필 사진 URL (직접 입력)</label>
+                <input type="url" id="prof-avatar-url" placeholder="https://example.com/my-photo.png">
+            </div>
+
+            <!-- AI 설정 섹션 -->
+            <div class="api-key-section" id="ai-settings-section">
+                <h3>AI 설정</h3>
+                <p class="api-key-hint">API 키를 등록하면 채팅에서 @gemini @chatgpt @claude @grok 으로 AI를 호출할 수 있습니다. 미등록 시 해당 AI를 사용할 수 없습니다.</p>
+
+                <div class="profile-field-group">
+                    <label>기본 AI 모델</label>
+                    <select id="prof-ai-provider">
+                        <option value="gemini">Google Gemini</option>
+                        <option value="openai">OpenAI (ChatGPT)</option>
+                        <option value="claude">Anthropic (Claude)</option>
+                        <option value="grok">xAI (Grok)</option>
+                    </select>
+                </div>
+
+                <div class="api-key-row">
+                    <label>Google Gemini API Key</label>
+                    <input type="password" id="prof-gemini-key" placeholder="Gemini API 키 입력">
+                </div>
+                <div class="api-key-row">
+                    <label>OpenAI (ChatGPT) API Key</label>
+                    <input type="password" id="prof-openai-key" placeholder="OpenAI API 키 입력">
+                </div>
+                <div class="api-key-row">
+                    <label>Anthropic (Claude) API Key</label>
+                    <input type="password" id="prof-claude-key" placeholder="Claude API 키 입력">
+                </div>
+                <div class="api-key-row">
+                    <label>xAI (Grok) API Key</label>
+                    <input type="password" id="prof-grok-key" placeholder="Grok API 키 입력">
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <button type="submit" class="profile-btn-save" id="save-btn">프로필 저장</button>
+                <button type="button" class="profile-btn-chat" id="chat-btn" style="display: none;">1:1 채팅하기</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 알림 모달 -->
+    <div class="modal-overlay" id="custom-alert-modal">
+        <div class="select-ui">
+            <div class="select-inbox" id="alert-msg-text">알림 내용</div>
+            <div class="btn-box">
+                <button type="button" class="btn-y" id="alert-ok-btn">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = "http://localhost:5000";
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUserId = urlParams.get('id');
+        const myUserId = sessionStorage.getItem('myUserId') || "";
+
+        const viewUserId = targetUserId || myUserId;
+        const isMyProfile = (!targetUserId || targetUserId === myUserId);
+
+        const pageTitle = document.getElementById('page-title');
+        const avatarImgPreview = document.getElementById('avatar-img-preview');
+        const avatarPresets = document.getElementById('avatar-presets');
+        const avatarUploadArea = document.getElementById('avatar-upload-area');
+        const avatarUploadBtn = document.getElementById('avatar-upload-btn');
+        const avatarFileInput = document.getElementById('avatar-file-input');
+        const avatarUploadStatus = document.getElementById('avatar-upload-status');
+
+        const profUserId = document.getElementById('prof-user-id');
+        const profUserName = document.getElementById('prof-user-name');
+        const profStatusMsg = document.getElementById('prof-status-msg');
+        const profAvatarUrl = document.getElementById('prof-avatar-url');
+        const profAiProvider = document.getElementById('prof-ai-provider');
+        const profGeminiKey = document.getElementById('prof-gemini-key');
+        const profOpenaiKey = document.getElementById('prof-openai-key');
+        const profClaudeKey = document.getElementById('prof-claude-key');
+        const profGrokKey = document.getElementById('prof-grok-key');
+
+        const avatarUrlGroup = document.getElementById('avatar-url-group');
+        const aiSettingsSection = document.getElementById('ai-settings-section');
+        const saveBtn = document.getElementById('save-btn');
+        const chatBtn = document.getElementById('chat-btn');
+        const backBtn = document.getElementById('back-btn');
+        const avatarOpts = document.querySelectorAll('.avatar-opt');
+
+        const alertModal = document.getElementById('custom-alert-modal');
+        const alertMsgText = document.getElementById('alert-msg-text');
+        const alertOkBtn = document.getElementById('alert-ok-btn');
+
+        function showCustomAlert(msg, onConfirm = null) {
+            alertMsgText.textContent = msg;
+            alertModal.classList.add('show');
+            alertOkBtn.onclick = () => {
+                alertModal.classList.remove('show');
+                if (onConfirm) onConfirm();
+            };
+        }
+
+        let selectedAvatarUrl = 'https://api.dicebear.com/7.x/bottts/svg?seed=' + (viewUserId || 'user');
+
+        backBtn.onclick = () => window.location.href = 'index.html';
+
+        if (!viewUserId) {
+            showCustomAlert('로그인이 필요합니다.', () => window.location.href = 'index.html');
+        }
+
+        // 이미지 파일 업로드
+        avatarUploadBtn.onclick = () => avatarFileInput.click();
+
+        avatarFileInput.onchange = async () => {
+            const file = avatarFileInput.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                showCustomAlert('이미지 크기는 5MB 이하여야 합니다.');
+                return;
+            }
+
+            avatarUploadStatus.textContent = '업로드 중...';
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/avatar/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (data.success) {
+                    selectedAvatarUrl = BACKEND_URL + data.avatarUrl;
+                    profAvatarUrl.value = selectedAvatarUrl;
+                    avatarImgPreview.src = selectedAvatarUrl;
+                    avatarUploadStatus.textContent = '업로드 완료!';
+                    avatarOpts.forEach(o => o.classList.remove('selected'));
+                } else {
+                    showCustomAlert(data.message || '업로드 실패');
+                    avatarUploadStatus.textContent = '';
+                }
+            } catch (err) {
+                showCustomAlert('업로드 중 오류 발생');
+                avatarUploadStatus.textContent = '';
+            }
+        };
+
+        // 프리셋 클릭
+        avatarOpts.forEach(opt => {
+            opt.onclick = () => {
+                if (!isMyProfile) return;
+                avatarOpts.forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                selectedAvatarUrl = opt.getAttribute('data-url');
+                profAvatarUrl.value = selectedAvatarUrl;
+                avatarImgPreview.src = selectedAvatarUrl;
+                avatarUploadStatus.textContent = '';
+            };
+        });
+
+        // URL 직접 입력
+        profAvatarUrl.oninput = () => {
+            selectedAvatarUrl = profAvatarUrl.value.trim() || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + viewUserId;
+            avatarImgPreview.src = selectedAvatarUrl;
+        };
+
+        // 프로필 로드
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/profile/${viewUserId}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    profUserId.value = data.userId;
+                    profUserName.value = data.userName;
+                    profStatusMsg.value = data.statusMsg || "";
+                    selectedAvatarUrl = data.avatar || ('https://api.dicebear.com/7.x/bottts/svg?seed=' + data.userId);
+                    profAvatarUrl.value = selectedAvatarUrl;
+                    avatarImgPreview.src = selectedAvatarUrl;
+
+                    if (profAiProvider) profAiProvider.value = data.aiProvider || "gemini";
+                    if (profGeminiKey) profGeminiKey.value = data.geminiKey || "";
+                    if (profOpenaiKey) profOpenaiKey.value = data.openaiKey || "";
+                    if (profClaudeKey) profClaudeKey.value = data.claudeKey || "";
+                    if (profGrokKey) profGrokKey.value = data.grokKey || "";
+
+                    avatarOpts.forEach(opt => {
+                        if (opt.getAttribute('data-url') === selectedAvatarUrl) {
+                            opt.classList.add('selected');
+                        }
+                    });
+                } else {
+                    showCustomAlert('프로필을 불러올 수 없습니다.');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            if (!isMyProfile) {
+                pageTitle.textContent = "유저 프로필";
+                profUserName.readOnly = true;
+                profStatusMsg.readOnly = true;
+                profUserName.style.opacity = '0.8';
+                profStatusMsg.style.opacity = '0.8';
+                avatarPresets.style.display = 'none';
+                avatarUploadArea.style.display = 'none';
+                if (avatarUrlGroup) avatarUrlGroup.style.display = 'none';
+                if (aiSettingsSection) aiSettingsSection.style.display = 'none';
+                saveBtn.style.display = 'none';
+                chatBtn.style.display = 'block';
+                chatBtn.onclick = () => window.location.href = `index.html?chat=${viewUserId}`;
+            }
+        }
+
+        loadProfile();
+
+        // 프로필 저장
+        document.getElementById('profile-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!isMyProfile) return;
+
+            const userName = profUserName.value.trim();
+            const statusMsg = profStatusMsg.value.trim();
+            const avatarUrl = profAvatarUrl.value.trim() || selectedAvatarUrl;
+            const aiProvider = profAiProvider ? profAiProvider.value : "gemini";
+            const geminiKey = profGeminiKey ? profGeminiKey.value.trim() : "";
+            const openaiKey = profOpenaiKey ? profOpenaiKey.value.trim() : "";
+            const claudeKey = profClaudeKey ? profClaudeKey.value.trim() : "";
+            const grokKey = profGrokKey ? profGrokKey.value.trim() : "";
+
+            if (!userName) {
+                showCustomAlert('닉네임을 입력해 주세요.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/profile/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: myUserId,
+                        userName,
+                        statusMsg,
+                        avatar: avatarUrl,
+                        aiProvider,
+                        geminiKey,
+                        openaiKey,
+                        claudeKey,
+                        grokKey
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    sessionStorage.setItem('myUserName', userName);
+                    sessionStorage.setItem('myStatusMsg', statusMsg);
+                    sessionStorage.setItem('myAvatar', avatarUrl);
+                    showCustomAlert('프로필이 성공적으로 저장되었습니다!', () => {
+                        window.location.href = 'index.html';
+                    });
+                } else {
+                    showCustomAlert(data.message || '저장에 실패했습니다.');
+                }
+            } catch (err) {
+                showCustomAlert('서버 연결 실패');
+            }
+        };
+    </script>
 </body>
+</html>

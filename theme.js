@@ -1,3 +1,4 @@
+// 1. [테마 즉시 적용] 페이지 로딩 전 배경 색상 깜빡임(FOUC) 방지
 (function() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     if (savedTheme === 'dark') {
@@ -5,25 +6,36 @@
     }
 })();
 
-// 2. [버튼 동기화 및 토글] 페이지가 다 켜진 후 버튼 제어
-window.addEventListener('DOMContentLoaded', () => {
-    const themeToggleBtn = document.getElementById('theme-toggle');
-    if (!themeToggleBtn) return; // 현재 페이지에 토글 버튼이 없으면 패스
+// 2. [버튼 동기화 및 이벤트 처리]
+document.addEventListener('DOMContentLoaded', () => {
+    // 페이지 내 모든 테마 토글 버튼의 아이콘을 현재 테마 상태에 맞게 동기화
+    function updateAllThemeButtons(theme) {
+        const buttons = document.querySelectorAll('.theme-toggle-btn');
+        const icon = theme === 'dark' ? '☀️' : '🌙';
+        buttons.forEach(btn => {
+            btn.textContent = icon;
+        });
+    }
 
+    // 페이지 로드시 아이콘 초기화
     const currentTheme = localStorage.getItem('theme') || 'light';
-    themeToggleBtn.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+    updateAllThemeButtons(currentTheme);
 
-    themeToggleBtn.addEventListener('click', () => {
+    // 이벤트 위임을 사용하여 페이지 내 어떤 .theme-toggle-btn이 클릭되든 작동하도록 처리
+    document.addEventListener('click', (event) => {
+        const toggleBtn = event.target.closest('.theme-toggle-btn');
+        if (!toggleBtn) return;
+
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        
-        if (isDark) {
-            document.documentElement.setAttribute('data-theme', 'light');
-            themeToggleBtn.textContent = '🌙';
-            localStorage.setItem('theme', 'light');
-        } else {
+        const nextTheme = isDark ? 'light' : 'dark';
+
+        if (nextTheme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
-            themeToggleBtn.textContent = '☀️';
-            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
         }
+
+        localStorage.setItem('theme', nextTheme);
+        updateAllThemeButtons(nextTheme);
     });
 });
