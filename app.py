@@ -221,6 +221,25 @@ def call_ai_provider(provider, api_key, prompt):
 # ==========================================
 # 상태 확인 / Heartbeat
 # ==========================================
+
+# Gemini API 설정 (모델명 표준화)
+GEMINI_API_KEY = input("your gemini api key: ")
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-3.6-flash')
+
+# 💡 [임시 DB] 초기 유저 데이터베이스 (기본 AI 포함)
+users_db = {
+    "bot_gemini": {
+        "password": "",
+        "userName": "🤖 Gemini AI"
+    }
+}
+
+# 채팅방 메시지 DB & 카운터
+chat_rooms_db = {}
+message_counter = 0
+
+
 @app.route('/', methods=['GET'])
 def index():
     return jsonify({"status": "running", "serverTime": SERVER_START_TIME})
