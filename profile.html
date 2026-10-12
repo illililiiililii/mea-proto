@@ -31,6 +31,40 @@
             background: var(--border-sub);
             border-color: #007aff;
         }
+        .profile-dropdown {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-navi);
+            overflow: hidden;
+        }
+        .profile-dropdown summary {
+            list-style: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(148, 163, 184, 0.08);
+        }
+        .profile-dropdown summary::-webkit-details-marker { display: none; }
+        .profile-dropdown summary::after {
+            content: '▾';
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .profile-dropdown[open] summary::after {
+            content: '▴';
+        }
+        .dropdown-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 14px;
+        }
         .api-key-section {
             width: 100%;
             display: flex;
@@ -141,38 +175,54 @@
                 <input type="url" id="prof-avatar-url" placeholder="https://example.com/my-photo.png">
             </div>
 
-            <!-- AI 설정 섹션 -->
-            <div class="api-key-section" id="ai-settings-section">
-                <h3>AI 설정</h3>
-                <p class="api-key-hint">API 키를 등록하면 채팅에서 @gemini @chatgpt @claude @grok 으로 AI를 호출할 수 있습니다. 미등록 시 해당 AI를 사용할 수 없습니다.</p>
+            <details class="profile-dropdown" id="password-setting-section" open>
+                <summary>비밀번호 변경</summary>
+                <div class="dropdown-content">
+                    <div class="profile-field-group">
+                        <label>현재 비밀번호</label>
+                        <input type="password" id="prof-current-password" placeholder="현재 비밀번호 입력">
+                    </div>
+                    <div class="profile-field-group">
+                        <label>새 비밀번호</label>
+                        <input type="password" id="prof-new-password" placeholder="8자 이상 새 비밀번호">
+                    </div>
+                    <button type="button" class="profile-btn-save" id="change-password-btn" style="margin-top: 4px;">비밀번호 변경</button>
+                </div>
+            </details>
 
-                <div class="profile-field-group">
-                    <label>기본 AI 모델</label>
-                    <select id="prof-ai-provider">
-                        <option value="gemini">Google Gemini</option>
-                        <option value="openai">OpenAI (ChatGPT)</option>
-                        <option value="claude">Anthropic (Claude)</option>
-                        <option value="grok">xAI (Grok)</option>
-                    </select>
-                </div>
+            <details class="profile-dropdown" id="ai-settings-section" open>
+                <summary>AI API 설정</summary>
+                <div class="dropdown-content">
+                    <p class="api-key-hint">API 키를 등록하면 채팅에서 @gemini @chatgpt @claude @grok 으로 AI를 호출할 수 있습니다. 미등록 시 해당 AI를 사용할 수 없습니다.</p>
 
-                <div class="api-key-row">
-                    <label>Google Gemini API Key</label>
-                    <input type="password" id="prof-gemini-key" placeholder="Gemini API 키 입력">
+                    <div class="profile-field-group">
+                        <label>기본 AI 모델</label>
+                        <select id="prof-ai-provider">
+                            <option value="gemini">Google Gemini</option>
+                            <option value="openai">OpenAI (ChatGPT)</option>
+                            <option value="claude">Anthropic (Claude)</option>
+                            <option value="grok">xAI (Grok)</option>
+                        </select>
+                    </div>
+
+                    <div class="api-key-row">
+                        <label>Google Gemini API Key</label>
+                        <input type="password" id="prof-gemini-key" placeholder="Gemini API 키 입력">
+                    </div>
+                    <div class="api-key-row">
+                        <label>OpenAI (ChatGPT) API Key</label>
+                        <input type="password" id="prof-openai-key" placeholder="OpenAI API 키 입력">
+                    </div>
+                    <div class="api-key-row">
+                        <label>Anthropic (Claude) API Key</label>
+                        <input type="password" id="prof-claude-key" placeholder="Claude API 키 입력">
+                    </div>
+                    <div class="api-key-row">
+                        <label>xAI (Grok) API Key</label>
+                        <input type="password" id="prof-grok-key" placeholder="Grok API 키 입력">
+                    </div>
                 </div>
-                <div class="api-key-row">
-                    <label>OpenAI (ChatGPT) API Key</label>
-                    <input type="password" id="prof-openai-key" placeholder="OpenAI API 키 입력">
-                </div>
-                <div class="api-key-row">
-                    <label>Anthropic (Claude) API Key</label>
-                    <input type="password" id="prof-claude-key" placeholder="Claude API 키 입력">
-                </div>
-                <div class="api-key-row">
-                    <label>xAI (Grok) API Key</label>
-                    <input type="password" id="prof-grok-key" placeholder="Grok API 키 입력">
-                </div>
-            </div>
+            </details>
 
             <div class="profile-actions">
                 <button type="submit" class="profile-btn-save" id="save-btn">프로필 저장</button>
@@ -212,6 +262,8 @@
         const profUserName = document.getElementById('prof-user-name');
         const profStatusMsg = document.getElementById('prof-status-msg');
         const profAvatarUrl = document.getElementById('prof-avatar-url');
+        const profCurrentPassword = document.getElementById('prof-current-password');
+        const profNewPassword = document.getElementById('prof-new-password');
         const profAiProvider = document.getElementById('prof-ai-provider');
         const profGeminiKey = document.getElementById('prof-gemini-key');
         const profOpenaiKey = document.getElementById('prof-openai-key');
@@ -220,7 +272,9 @@
 
         const avatarUrlGroup = document.getElementById('avatar-url-group');
         const aiSettingsSection = document.getElementById('ai-settings-section');
+        const passwordSettingSection = document.getElementById('password-setting-section');
         const saveBtn = document.getElementById('save-btn');
+        const changePasswordBtn = document.getElementById('change-password-btn');
         const chatBtn = document.getElementById('chat-btn');
         const backBtn = document.getElementById('back-btn');
         const avatarOpts = document.querySelectorAll('.avatar-opt');
@@ -344,11 +398,39 @@
                 avatarUploadArea.style.display = 'none';
                 if (avatarUrlGroup) avatarUrlGroup.style.display = 'none';
                 if (aiSettingsSection) aiSettingsSection.style.display = 'none';
+                if (passwordSettingSection) passwordSettingSection.style.display = 'none';
                 saveBtn.style.display = 'none';
                 chatBtn.style.display = 'block';
                 chatBtn.onclick = () => window.location.href = `index.html?chat=${viewUserId}`;
             }
         }
+
+        changePasswordBtn.onclick = async () => {
+            const currentPassword = profCurrentPassword ? profCurrentPassword.value.trim() : '';
+            const newPassword = profNewPassword ? profNewPassword.value.trim() : '';
+            if (!newPassword || newPassword.length < 8) {
+                showCustomAlert('새 비밀번호는 8자 이상이어야 합니다.');
+                return;
+            }
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/profile/password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: myUserId, currentPassword, newPassword })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showCustomAlert('비밀번호가 변경되었습니다.', () => {
+                        if (profCurrentPassword) profCurrentPassword.value = '';
+                        if (profNewPassword) profNewPassword.value = '';
+                    });
+                } else {
+                    showCustomAlert(data.message || '비밀번호 변경에 실패했습니다.');
+                }
+            } catch (err) {
+                showCustomAlert('서버 연결 실패');
+            }
+        };
 
         loadProfile();
 

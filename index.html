@@ -184,14 +184,8 @@
             <div>
                 <menu class="menu">
                     <b style="display: flex; align-items: center; gap: 6px;">메신저</b>
-                    <div id="user-profile-summary" style="display: flex; align-items: center; gap: 8px; margin-left: 12px; cursor: pointer;" title="프로필 수정">
-                        <span id="user-display-avatar" style="font-size: 20px;"></span>
-                        <div style="display: flex; flex-direction: column;">
-                            <span id="user-display-name" style="font-size: 13px; font-weight: bold; color: var(--text-primary);"></span>
-                            <span id="user-display-status" style="font-size: 11px; color: var(--text-secondary);"></span>
-                        </div>
-                    </div>
-                    <button id="profile-edit-btn" style="padding: 5px 10px; font-size: 12px; background: var(--border-sub); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-weight: bold; margin-left: 8px; transition: all 0.2s ease;">프로필 수정</button>
+                    <button id="admin-panel-btn" class="admin-panel-toggle" style="display:none; padding: 5px 10px; font-size: 12px; background: #0f172a; color: white; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-weight: bold;">관리자</button>
+                    <button id="tutorial-open-btn" class="tutorial-open-btn" type="button" style="padding: 5px 10px; font-size: 12px; background: var(--bg-navi); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-weight: bold;">튜토리얼</button>
                     <div style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
                         <button id="logout-btn" style="padding: 5px 10px; font-size: 12px; background: #ff3b30; color: white; border: none; border-radius: 8px; cursor: pointer; display: none; font-weight: bold;">로그아웃</button>
                         <button id="theme-toggle" class="theme-toggle-btn" title="테마 변경">🌙</button>
@@ -199,6 +193,8 @@
                 </menu>
             </div>
         </header>
+
+        <div id="notice-banner" class="notice-banner"></div>
 
         <div class="mid">
             <!-- 좌측 사이드바 -->
@@ -236,7 +232,7 @@
                     <div class="chat-body" id="chat-body"></div>
                   
                     <form class="chat-footer" onsubmit="event.preventDefault();">
-                      <button type="button" class="file-upload-btn" id="file-upload-btn" title="파일 전송">📎</button>
+                      <button type="button" class="file-upload-btn" id="file-upload-btn" title="파일 전송">+</button>
                       <input type="file" id="file-upload-input" style="display: none;" accept="image/*,.pdf,.txt,.zip,.doc,.docx,.xls,.xlsx,.pptx,.mp4,.mp3">
                       <textarea class="chat-input" id="chat-input" placeholder="메시지를 입력하세요... (Shift+Enter 줄바꿈)"></textarea>
                       <button type="submit" class="send-button" id="send-button">전송</button>
@@ -245,6 +241,41 @@
             </main>
         </div>
         <footer class="footer"></footer>
+    </div>
+
+    <aside id="admin-panel" class="admin-panel hidden">
+        <div class="admin-panel-header">
+            <h3>관리자 콘솔</h3>
+            <button id="admin-panel-close" type="button">✕</button>
+        </div>
+        <div class="admin-panel-body">
+            <div class="admin-summary" id="admin-summary"></div>
+            <form id="admin-notice-form" class="admin-notice-form">
+                <input id="admin-notice-title" type="text" placeholder="공지 제목" required>
+                <textarea id="admin-notice-content" rows="3" placeholder="공지 내용을 입력하세요" required></textarea>
+                <button type="submit">공지 등록</button>
+            </form>
+            <div class="admin-notice-list" id="admin-notice-list"></div>
+            <div class="admin-user-list" id="admin-user-list"></div>
+        </div>
+    </aside>
+
+    <button id="tutorial-fab" class="tutorial-fab" type="button">튜토리얼</button>
+
+    <div class="tutorial-overlay" id="tutorial-overlay">
+        <div class="tutorial-card">
+            <div class="tutorial-badge">첫 방문 가이드</div>
+            <h3>환영합니다!</h3>
+            <ul>
+                <li>좌측 목록에서 사용자와 AI를 선택해 대화를 시작하세요.</li>
+                <li>프로필에서 상태 메시지, 사진, 비밀번호를 자유롭게 바꿀 수 있습니다.</li>
+                <li>관리자 계정은 공지 등록, 유저 관리, 비밀번호 초기화가 가능합니다.</li>
+            </ul>
+            <div class="tutorial-actions">
+                <button type="button" class="tutorial-btn tutorial-btn-secondary" id="tutorial-skip-btn">건너뛰기</button>
+                <button type="button" class="tutorial-btn tutorial-btn-primary" id="tutorial-start-btn">시작하기</button>
+            </div>
+        </div>
     </div>
 
     <!-- 로그인 모달 -->
@@ -282,6 +313,18 @@
             </div>
             <button type="submit">가입</button>
         </form>
+    </div>
+
+    <!-- 서버 연결 실패 모달 -->
+    <div class="modal-overlay" id="server-disconnect-modal">
+        <div class="select-ui server-disconnect-ui">
+            <h2 class="select-inbox">서버에 연결할 수 없습니다.</h2>
+            <p class="disconnect-subtext">서버가 종료되었거나 네트워크 연결이 끊어졌습니다.</p>
+            <div class="btn-box">
+                <button class="btn-y" id="retry-server-btn" type="button">다시 연결</button>
+                <button class="btn-n" id="confirm-server-disconnect-btn" type="button">확인</button>
+            </div>
+        </div>
     </div>
 
     <!-- 로그아웃 모달 -->

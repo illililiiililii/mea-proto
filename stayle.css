@@ -52,6 +52,18 @@ body {
     display: flex;
     flex-direction: column;
     padding: 12px;
+    overflow: hidden;
+}
+
+.profile-page-body {
+    overflow: auto !important;
+    padding: 20px 12px;
+}
+
+.profile-card {
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .messenger-main {
@@ -167,6 +179,87 @@ header.header {
 .navi button:hover,
 .navi .user-chat-btn:hover {
     background: var(--border-sub);
+}
+
+.my-profile-card {
+    margin: 12px 10px 10px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(148, 163, 184, 0.05));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 94px;
+}
+
+.my-profile-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.my-profile-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    background: rgba(37, 99, 235, 0.12);
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    color: #60a5fa;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.my-profile-edit-btn {
+    border: 1px solid var(--border-color);
+    background: var(--bg-box);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.my-profile-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.my-profile-summary .user-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+}
+
+.my-profile-summary .user-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.my-profile-summary .user-name {
+    color: var(--text-primary);
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.my-profile-summary .user-status {
+    color: var(--text-secondary);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .navi .profile,
@@ -505,6 +598,92 @@ header.header {
     cursor: pointer;
 }
 
+.tutorial-fab {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 11000;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(15, 23, 42, 0.9);
+    color: #fff;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+}
+
+.tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 12000;
+    padding: 20px;
+}
+
+.tutorial-card {
+    width: min(420px, 100%);
+    background: var(--bg-box);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    box-shadow: 0 22px 60px rgba(15, 23, 42, 0.28);
+    padding: 24px 22px 18px;
+    color: var(--text-primary);
+}
+
+.tutorial-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--my-bubble-bg);
+    color: var(--my-bubble-text);
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.tutorial-card h3 {
+    font-size: 26px;
+    margin-bottom: 14px;
+}
+
+.tutorial-card ul {
+    list-style: disc;
+    padding-left: 18px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 18px;
+}
+
+.tutorial-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.tutorial-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.tutorial-btn-primary {
+    background: #007aff;
+    color: white;
+}
+
+.tutorial-btn-secondary {
+    background: var(--border-sub);
+    color: var(--text-primary);
+}
+
 /* ================================================================
    알림창 / 모달 UI (새로 추가된 영역)
    ================================================================ */
@@ -554,6 +733,17 @@ header.header {
     color: var(--text-primary);
 }
 
+.server-disconnect-ui {
+    max-width: 340px;
+}
+
+.disconnect-subtext {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    margin: -10px 0 18px;
+}
+
 .btn-box {
     display: flex;
     gap: 10px;
@@ -582,7 +772,7 @@ header.header {
 
 .btn-n {
     background: #840000;
-    color: var(--text-primary);
+    color: #ffffff;
 }
 
 .btn-n:hover {
@@ -1154,4 +1344,322 @@ header.header {
     font-size: 14px;
     outline: none;
     transition: border-color 0.2s ease;
+}
+
+.notice-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #0f172a, #1d4ed8);
+    color: #eff6ff;
+    font-size: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notice-banner strong {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-panel-toggle {
+    display: none;
+}
+
+.admin-panel {
+    position: fixed;
+    right: 20px;
+    top: 80px;
+    width: min(420px, calc(100vw - 32px));
+    max-height: 70vh;
+    overflow: auto;
+    background: var(--bg-box);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.22);
+    z-index: 2000;
+}
+
+.admin-panel.hidden {
+    display: none;
+}
+
+.admin-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-sub);
+    background: var(--bg-navi);
+}
+
+.admin-panel-header h3 {
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.admin-panel-header button {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.admin-panel-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.admin-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.summary-item {
+    background: var(--bg-navi);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+}
+
+.summary-item-wide {
+    grid-column: 1 / -1;
+}
+
+.summary-item span {
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.summary-item strong {
+    font-size: 18px;
+    color: var(--text-primary);
+}
+
+.admin-notice-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-notice-form input,
+.admin-notice-form textarea {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--bg-chat-input);
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.admin-notice-form button,
+.admin-delete-btn,
+.admin-reset-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.admin-notice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-notice-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-navi);
+    border-radius: 10px;
+}
+
+.admin-notice-row strong {
+    display: block;
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.admin-notice-row small {
+    display: block;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.admin-notice-delete,
+.admin-delete-btn {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    padding: 8px 10px;
+    font-size: 12px;
+}
+
+.admin-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-user-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-navi);
+    border-radius: 10px;
+}
+
+.admin-user-row strong {
+    display: block;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.admin-user-row small {
+    color: var(--text-secondary);
+}
+
+.admin-user-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.admin-reset-btn {
+    background: linear-gradient(135deg, #0f766e, #115e59);
+    padding: 8px 10px;
+    font-size: 12px;
+}
+
+.admin-delete-btn {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    padding: 8px 10px;
+    font-size: 12px;
+}
+
+.empty-state {
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-align: center;
+    padding: 8px 0;
+}
+
+@media (max-width: 980px) {
+    body {
+        padding: 8px;
+    }
+
+    .mid {
+        border-radius: 0 0 10px 10px;
+    }
+
+    .navi {
+        width: 190px;
+        min-width: 170px;
+        flex-basis: 190px;
+    }
+}
+
+@media (max-width: 760px) {
+    html, body {
+        overflow: auto;
+    }
+
+    .messenger-main {
+        min-height: 100vh;
+        height: auto;
+    }
+
+    .header {
+        padding: 10px 12px;
+    }
+
+    .menu {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .mid {
+        flex-direction: column;
+        height: calc(100vh - 120px);
+        min-height: 520px;
+    }
+
+    .navi {
+        width: 100%;
+        min-width: 0;
+        max-height: 240px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        flex-basis: auto;
+    }
+
+    .main1 {
+        min-height: 320px;
+    }
+
+    .chat-header {
+        padding: 0 10px;
+    }
+
+    .chat-footer {
+        gap: 8px;
+        padding: 8px 10px;
+    }
+
+    .send-button {
+        min-width: 58px;
+        padding: 0 14px;
+    }
+}
+
+@media (max-width: 520px) {
+    .menu {
+        font-size: 12px;
+    }
+
+    .admin-panel {
+        right: 10px;
+        top: 60px;
+        width: calc(100vw - 20px);
+    }
+
+    .admin-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .chat-input {
+        font-size: 14px;
+    }
+
+    .chat-title {
+        font-size: 13px;
+    }
 }

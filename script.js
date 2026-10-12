@@ -7,6 +7,7 @@ let myUserId = sessionStorage.getItem('myUserId') || "";
 let myUserName = sessionStorage.getItem('myUserName') || "";
 let myStatusMsg = sessionStorage.getItem('myStatusMsg') || "";
 let myAvatar = sessionStorage.getItem('myAvatar') || "";
+let myRole = sessionStorage.getItem('myRole') || 'user';
 let serverTime = sessionStorage.getItem('serverTime') || "";
 let currentRoomId = null;
 let currentTargetUserId = null;
@@ -24,7 +25,20 @@ const userDisplayStatus = document.getElementById('user-display-status');
 const userDisplayAvatar = document.getElementById('user-display-avatar');
 const userProfileSummary = document.getElementById('user-profile-summary');
 const profileEditBtn = document.getElementById('profile-edit-btn');
+const adminPanelBtn = document.getElementById('admin-panel-btn');
 const logoutBtn = document.getElementById('logout-btn');
+const adminPanel = document.getElementById('admin-panel');
+const adminPanelClose = document.getElementById('admin-panel-close');
+const adminNoticeForm = document.getElementById('admin-notice-form');
+const adminNoticeList = document.getElementById('admin-notice-list');
+const adminUserList = document.getElementById('admin-user-list');
+const adminSummary = document.getElementById('admin-summary');
+const noticeBanner = document.getElementById('notice-banner');
+const tutorialOverlay = document.getElementById('tutorial-overlay');
+const tutorialSkipBtn = document.getElementById('tutorial-skip-btn');
+const tutorialStartBtn = document.getElementById('tutorial-start-btn');
+const tutorialOpenBtn = document.getElementById('tutorial-open-btn');
+const tutorialFab = document.getElementById('tutorial-fab');
 
 const chatTargetAvatar = document.getElementById('chat-target-avatar');
 const chatTargetName = document.getElementById('chat-target-name');
@@ -34,6 +48,9 @@ const viewTargetProfileBtn = document.getElementById('view-target-profile-btn');
 const logoutModal = document.getElementById('logout-modal');
 const confirmLogoutBtn = document.getElementById('confirm-logout-btn');
 const cancelLogoutBtn = document.getElementById('cancel-logout-btn');
+const serverDisconnectModal = document.getElementById('server-disconnect-modal');
+const retryServerBtn = document.getElementById('retry-server-btn');
+const confirmServerDisconnectBtn = document.getElementById('confirm-server-disconnect-btn');
 
 const tabLoginBtn = document.getElementById('tab-login-btn');
 const tabRegisterBtn = document.getElementById('tab-register-btn');
@@ -94,6 +111,37 @@ function renderAvatarElement(element, avatarValue, fallback) {
     }
 }
 
+function getRoomKey(roomId) {
+    return `secure-room-v1:${roomId || 'public'}`;
+}
+
+async function encryptRoomMessage(text, roomId) {
+    const roomKey = getRoomKey(roomId);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encodedText = new TextEncoder().encode(text);
+    const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(roomKey), { name: 'AES-GCM' }, false, ['encrypt']);
+    const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, encodedText);
+    return JSON.stringify({ version: 'v1', iv: Array.from(iv).map(byte => byte.toString(16).padStart(2, '0')).join(''), cipher: btoa(String.fromCharCode(...new Uint8Array(cipher))) });
+}
+
+async function decryptRoomMessage(rawText, roomId) {
+    if (!rawText || typeof rawText !== 'string') return rawText || '';
+    try {
+        const parsed = JSON.parse(rawText);
+        if (parsed && parsed.version === 'v1' && parsed.cipher && parsed.iv) {
+            const keyMaterial = new TextEncoder().encode(getRoomKey(roomId));
+            const key = await crypto.subtle.importKey('raw', keyMaterial, { name: 'AES-GCM' }, false, ['decrypt']);
+            const ivBytes = new Uint8Array(parsed.iv.match(/.{1,2}/g).map((hex) => parseInt(hex, 16)));
+            const cipherBytes = Uint8Array.from(atob(parsed.cipher), (char) => char.charCodeAt(0));
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ivBytes }, key, cipherBytes);
+            return new TextDecoder().decode(decrypted);
+        }
+    } catch (e) {
+        return rawText;
+    }
+    return rawText;
+}
+
 
 // ==========================================
 // 비밀번호 토글
@@ -102,14 +150,14 @@ if (loginPwToggle && loginPwInput) {
     loginPwToggle.onclick = function () {
         const isPassword = loginPwInput.type === 'password';
         loginPwInput.type = isPassword ? 'text' : 'password';
-        loginPwToggle.textContent = isPassword ? '👁️' : '🙈';
+        loginPwToggle.textContent = isPassword ? '👁️' : '';
     };
 }
 if (regPwToggle && regPwInput) {
     regPwToggle.onclick = function () {
         const isPassword = regPwInput.type === 'password';
         regPwInput.type = isPassword ? 'text' : 'password';
-        regPwToggle.textContent = isPassword ? '👁️' : '🙈';
+        regPwToggle.textContent = isPassword ? '👁️' : '❌';
     };
 }
 
@@ -159,9 +207,51 @@ if (logoutBtn && logoutModal) {
     }
 }
 
+function showServerDisconnectModal() {
+    if (!serverDisconnectModal) return;
+    serverDisconnectModal.classList.add('show');
+    if (logoutModal) logoutModal.classList.remove('show');
+}
+
+function hideServerDisconnectModal() {
+    if (!serverDisconnectModal) return;
+    serverDisconnectModal.classList.remove('show');
+}
+
+async function retryServerConnection() {
+    try {
+        const res = await fetch(`${BACKEND_URL}/api/heartbeat`, { signal: AbortSignal.timeout(5000) });
+        const data = await res.json();
+        if (!res.ok || !data || data.alive !== true) {
+            throw new Error('heartbeat invalid');
+        }
+        hideServerDisconnectModal();
+        return true;
+    } catch (e) {
+        showServerDisconnectModal();
+        return false;
+    }
+}
+
+if (retryServerBtn) {
+    retryServerBtn.onclick = async () => {
+        const connected = await retryServerConnection();
+        if (connected) {
+            showModal('서버에 다시 연결되었습니다.');
+        }
+    };
+}
+
+if (confirmServerDisconnectBtn) {
+    confirmServerDisconnectBtn.onclick = () => {
+        hideServerDisconnectModal();
+        if (logoutModal) logoutModal.classList.add('show');
+    };
+}
+
 
 // ==========================================
-// 자동 로그아웃 (백엔드 죽으면)
+// 서버 상태 감시
 // ==========================================
 let heartbeatInterval = null;
 
@@ -171,17 +261,18 @@ function startHeartbeat() {
         try {
             const res = await fetch(`${BACKEND_URL}/api/heartbeat`, { signal: AbortSignal.timeout(5000) });
             const data = await res.json();
-            // 서버가 재시작 되었으면 (serverTime 변경) 자동 로그아웃
+            if (!res.ok || !data || data.alive !== true) {
+                throw new Error('heartbeat invalid');
+            }
             if (data.serverTime && serverTime && data.serverTime !== serverTime) {
-                sessionStorage.clear();
-                location.reload();
+                console.warn('서버가 재시작되어 연결 상태를 다시 확인합니다.');
+                showServerDisconnectModal();
                 return;
             }
+            hideServerDisconnectModal();
         } catch (e) {
-            // 서버 연결 불가 → 자동 로그아웃
-            console.warn("서버 연결 끊김, 자동 로그아웃");
-            sessionStorage.clear();
-            location.reload();
+            console.warn('서버 연결 끊김');
+            showServerDisconnectModal();
         }
     }, 5000);
 }
@@ -240,12 +331,14 @@ if (loginForm) {
                 myUserName = data.userName;
                 myStatusMsg = data.statusMsg || "";
                 myAvatar = data.avatar || "";
+                myRole = data.role || 'user';
                 serverTime = data.serverTime || "";
 
                 sessionStorage.setItem('myUserId', myUserId);
                 sessionStorage.setItem('myUserName', myUserName);
                 sessionStorage.setItem('myStatusMsg', myStatusMsg);
                 sessionStorage.setItem('myAvatar', myAvatar);
+                sessionStorage.setItem('myRole', myRole);
                 sessionStorage.setItem('serverTime', serverTime);
 
                 completeLogin();
@@ -317,6 +410,44 @@ if (registerForm) {
 // ==========================================
 let userRefreshInterval = null;
 
+function initTutorial(forceShow = false) {
+    if (!tutorialOverlay) return;
+    const seenTutorial = localStorage.getItem('messengerTutorialSeen') === 'true';
+    if (forceShow || !seenTutorial) {
+        tutorialOverlay.style.display = 'flex';
+    } else {
+        tutorialOverlay.style.display = 'none';
+    }
+
+    if (tutorialSkipBtn) {
+        tutorialSkipBtn.onclick = () => {
+            localStorage.setItem('messengerTutorialSeen', 'true');
+            tutorialOverlay.style.display = 'none';
+        };
+    }
+
+    if (tutorialStartBtn) {
+        tutorialStartBtn.onclick = () => {
+            localStorage.setItem('messengerTutorialSeen', 'true');
+            tutorialOverlay.style.display = 'none';
+        };
+    }
+
+    if (tutorialOpenBtn) {
+        tutorialOpenBtn.onclick = () => {
+            localStorage.removeItem('messengerTutorialSeen');
+            initTutorial(true);
+        };
+    }
+
+    if (tutorialFab) {
+        tutorialFab.onclick = () => {
+            localStorage.removeItem('messengerTutorialSeen');
+            initTutorial(true);
+        };
+    }
+}
+
 async function completeLogin() {
     if (loginWin) loginWin.style.display = 'none';
     if (messengerMain) messengerMain.classList.remove('is-blurred');
@@ -325,6 +456,8 @@ async function completeLogin() {
         logoutBtn.style.visibility = 'visible';
         logoutBtn.style.opacity = '1';
     }
+
+    initTutorial();
 
     // 프로필 동기화
     try {
@@ -343,7 +476,8 @@ async function completeLogin() {
     if (userDisplayName) userDisplayName.textContent = myUserName;
     if (userDisplayStatus) userDisplayStatus.textContent = myStatusMsg ? `"${myStatusMsg}"` : "";
     renderAvatarElement(userDisplayAvatar, myAvatar);
-
+    await refreshAdminState();
+    await fetchNotices();
     fetchAndRenderUsers();
 
     // 10초마다 유저 목록 새로고침 + 알림 체크
@@ -366,6 +500,17 @@ if (profileEditBtn) {
 if (userProfileSummary) {
     userProfileSummary.onclick = () => window.location.href = 'profile.html';
 }
+if (adminPanelBtn) {
+    adminPanelBtn.onclick = () => {
+        if (adminPanel) {
+            adminPanel.classList.toggle('hidden');
+            if (!adminPanel.classList.contains('hidden')) loadAdminPanel();
+        }
+    };
+}
+if (adminPanelClose) {
+    adminPanelClose.onclick = () => adminPanel.classList.add('hidden');
+}
 if (viewTargetProfileBtn) {
     viewTargetProfileBtn.onclick = () => {
         if (currentTargetUserId) {
@@ -376,8 +521,153 @@ if (viewTargetProfileBtn) {
 
 
 // ==========================================
-// 유저 목록 + 알림 배지
+// 관리자/공지 기능
 // ==========================================
+async function refreshAdminState() {
+    if (!myUserId) return;
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/profile/${myUserId}`);
+        const data = await response.json();
+        const isAdmin = Boolean(data.success && data.isAdmin);
+        myRole = data.role || myRole;
+        sessionStorage.setItem('myRole', myRole);
+        if (adminPanelBtn) adminPanelBtn.style.display = isAdmin ? 'inline-block' : 'none';
+    } catch (error) {
+        if (adminPanelBtn) adminPanelBtn.style.display = 'none';
+    }
+}
+
+async function fetchNotices() {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/admin/notices`);
+        const data = await response.json();
+        const notices = Array.isArray(data.notices) ? data.notices : [];
+        if (notices.length === 0) {
+            if (noticeBanner) noticeBanner.innerHTML = '';
+            if (adminNoticeList) adminNoticeList.innerHTML = '<p class="empty-state">등록된 공지가 없습니다.</p>';
+            return;
+        }
+        const first = notices[0];
+        if (noticeBanner) {
+            noticeBanner.innerHTML = `<strong>공지</strong> ${first.title}: ${first.content}`;
+        }
+        if (adminNoticeList) {
+            adminNoticeList.innerHTML = notices.map((notice) => `
+                <div class="admin-notice-row">
+                    <div>
+                        <strong>${notice.title}</strong>
+                        <small>${notice.content}</small>
+                    </div>
+                    <button type="button" class="admin-notice-delete" data-notice-id="${notice.id}">삭제</button>
+                </div>
+            `).join('');
+
+            adminNoticeList.querySelectorAll('.admin-notice-delete').forEach((btn) => {
+                btn.onclick = async () => {
+                    const noticeId = btn.dataset.noticeId;
+                    const res = await fetch(`${BACKEND_URL}/api/admin/notices/${encodeURIComponent(noticeId)}?userId=${encodeURIComponent(myUserId)}`, { method: 'DELETE' });
+                    const result = await res.json();
+                    showModal(result.message || '공지 삭제 완료');
+                    await fetchNotices();
+                    await loadAdminPanel();
+                };
+            });
+        }
+    } catch (error) {
+        if (noticeBanner) noticeBanner.innerHTML = '';
+        if (adminNoticeList) adminNoticeList.innerHTML = '<p class="empty-state">공지 목록을 불러오지 못했습니다.</p>';
+    }
+}
+
+async function loadAdminPanel() {
+    if (!adminPanel || !myUserId) return;
+    try {
+        const profileRes = await fetch(`${BACKEND_URL}/api/profile/${encodeURIComponent(myUserId)}`);
+        const profileData = await profileRes.json();
+        const isAdmin = Boolean(profileData.success && (profileData.isAdmin || profileData.role === 'admin'));
+        if (!isAdmin) {
+            if (adminSummary) adminSummary.innerHTML = '<p class="empty-state">관리자 권한이 없습니다.</p>';
+            if (adminUserList) adminUserList.innerHTML = '<p class="empty-state">관리자 전용 기능입니다.</p>';
+            return;
+        }
+
+        const summaryRes = await fetch(`${BACKEND_URL}/api/admin/summary?userId=${encodeURIComponent(myUserId)}`);
+        const summaryData = await summaryRes.json();
+        if (summaryData.success && adminSummary) {
+            const credentialsRes = await fetch(`${BACKEND_URL}/api/admin/credentials?userId=${encodeURIComponent(myUserId)}`);
+            const credentialsData = credentialsRes.ok ? await credentialsRes.json() : null;
+            adminSummary.innerHTML = `
+                <div class="summary-item"><span>총 사용자</span><strong>${summaryData.totalUsers || 0}</strong></div>
+                <div class="summary-item"><span>관리자</span><strong>${summaryData.adminUsers || 0}</strong></div>
+                <div class="summary-item"><span>공지</span><strong>${summaryData.noticeCount || 0}</strong></div>
+                <div class="summary-item summary-item-wide"><span>기본 비밀번호</span><strong>${credentialsData && credentialsData.success ? credentialsData.defaultPassword : 'admin123!'}</strong></div>
+            `;
+        }
+
+        const usersRes = await fetch(`${BACKEND_URL}/api/admin/users?userId=${encodeURIComponent(myUserId)}`);
+        const usersData = await usersRes.json();
+        if (!usersData.success || !adminUserList) return;
+        adminUserList.innerHTML = (usersData.users || []).map((user) => `
+            <div class="admin-user-row">
+                <div>
+                    <strong>${user.userName}</strong>
+                    <small>@${user.userId}</small>
+                </div>
+                <div class="admin-user-actions">
+                    <button type="button" data-user-id="${user.userId}" class="admin-reset-btn">초기화</button>
+                    <button type="button" data-user-id="${user.userId}" class="admin-delete-btn">삭제</button>
+                </div>
+            </div>
+        `).join('') || '<p class="empty-state">관리할 유저가 없습니다.</p>';
+
+        adminUserList.querySelectorAll('.admin-delete-btn').forEach((btn) => {
+            btn.onclick = async () => {
+                const targetId = btn.dataset.userId;
+                const res = await fetch(`${BACKEND_URL}/api/admin/users/${encodeURIComponent(targetId)}?userId=${encodeURIComponent(myUserId)}`, { method: 'DELETE' });
+                const result = await res.json();
+                showModal(result.message || '처리 완료');
+                await loadAdminPanel();
+            };
+        });
+
+        adminUserList.querySelectorAll('.admin-reset-btn').forEach((btn) => {
+            btn.onclick = async () => {
+                const targetId = btn.dataset.userId;
+                const res = await fetch(`${BACKEND_URL}/api/admin/users/${encodeURIComponent(targetId)}/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: myUserId })
+                });
+                const result = await res.json();
+                showModal(result.message || '초기화 완료');
+                await loadAdminPanel();
+            };
+        });
+    } catch (error) {
+        if (adminSummary) adminSummary.innerHTML = '<p class="empty-state">관리자 데이터를 불러오지 못했습니다.</p>';
+    }
+}
+
+if (adminNoticeForm) {
+    adminNoticeForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('admin-notice-title');
+        const content = document.getElementById('admin-notice-content');
+        if (!title || !content || !myUserId) return;
+        const res = await fetch(`${BACKEND_URL}/api/admin/notices?userId=${encodeURIComponent(myUserId)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: title.value.trim(), content: content.value.trim() })
+        });
+        const result = await res.json();
+        showModal(result.message || '공지 등록 완료');
+        title.value = '';
+        content.value = '';
+        await fetchNotices();
+        await loadAdminPanel();
+    };
+}
+
 let unreadMap = {};
 
 async function fetchUnread() {
@@ -403,7 +693,6 @@ async function fetchAndRenderUsers(query = "") {
         if (data.success && naviList) {
             naviList.innerHTML = "";
 
-            // AI 봇 버튼 추가
             const aiBtn = document.createElement('button');
             aiBtn.className = 'user-chat-btn ai-bot-btn';
             aiBtn.type = 'button';
@@ -417,9 +706,24 @@ async function fetchAndRenderUsers(query = "") {
             aiBtn.onclick = () => openPrivateChat('bot_ai', '통합 AI', 'AI에게 질문하기', 'https://api.dicebear.com/7.x/bottts/svg?seed=ai');
             naviList.appendChild(aiBtn);
 
+            const geminiBotBtn = document.createElement('button');
+            geminiBotBtn.className = 'user-chat-btn';
+            geminiBotBtn.type = 'button';
+            geminiBotBtn.innerHTML = `
+                <div class="user-avatar"><img class="user-avatar-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=gemini" alt="Gemini"></div>
+                <div class="user-info">
+                    <div class="user-name">Gemini 관리 봇</div>
+                    <div class="user-status">/delete-user userId</div>
+                </div>
+            `;
+            geminiBotBtn.onclick = () => openPrivateChat('bot_gemini', 'Gemini 관리 봇', '관리 명령: /delete-user userId', 'https://api.dicebear.com/7.x/bottts/svg?seed=gemini');
+            naviList.appendChild(geminiBotBtn);
+
             if (data.users.length === 0) {
-                naviList.innerHTML += `<div style="padding:15px; color:var(--text-secondary); font-size:12px; text-align:center;">검색된 유저가 없습니다.</div>`;
-                return;
+                const emptyState = document.createElement('div');
+                emptyState.style.cssText = 'padding:15px; color:var(--text-secondary); font-size:12px; text-align:center;';
+                emptyState.textContent = '검색된 유저가 없습니다.';
+                naviList.appendChild(emptyState);
             }
 
             data.users.forEach(user => {
@@ -444,6 +748,28 @@ async function fetchAndRenderUsers(query = "") {
                 };
                 naviList.appendChild(btn);
             });
+
+            const myProfileCard = document.createElement('div');
+            myProfileCard.className = 'my-profile-card';
+            myProfileCard.innerHTML = `
+                <div class="my-profile-card-header">
+                    <span class="my-profile-badge">내 프로필</span>
+                    <button type="button" class="my-profile-edit-btn">프로필 수정</button>
+                </div>
+                <div class="my-profile-summary">
+                    <div class="user-avatar"><img class="user-avatar-img" src="${myAvatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${myUserId}`}" alt="my profile"></div>
+                    <div class="user-info">
+                        <div class="user-name">${myUserName || myUserId || '내 계정'}</div>
+                        <div class="user-status">${myStatusMsg || '상태 메시지 없음'}</div>
+                    </div>
+                </div>
+            `;
+            myProfileCard.querySelector('.my-profile-edit-btn').onclick = () => window.location.href = 'profile.html';
+            myProfileCard.onclick = (event) => {
+                if (event.target.closest('.my-profile-edit-btn')) return;
+                window.location.href = 'profile.html';
+            };
+            naviList.appendChild(myProfileCard);
         }
     } catch (e) {
         console.error("유저 목록 로딩 에러:", e);
@@ -524,12 +850,15 @@ async function fetchRoomMessages() {
             if (data.messages.length !== lastRenderedMsgCount) {
                 if (chatBody) chatBody.innerHTML = "";
 
-                data.messages.forEach(msg => {
-                    const isMe = (msg.sender_id === myUserId);
-                    const messageType = isMe ? 'outgoing' : 'incoming';
-                    const senderName = isMe ? "" : (msg.sender_name || "");
-                    renderMessage(msg.text, messageType, senderName, false, msg.fileUrl);
-                });
+                (async () => {
+                    for (const msg of data.messages) {
+                        const isMe = (msg.sender_id === myUserId);
+                        const messageType = isMe ? 'outgoing' : 'incoming';
+                        const senderName = isMe ? "" : (msg.sender_name || "");
+                        const safeText = await decryptRoomMessage(msg.text, currentRoomId);
+                        renderMessage(safeText, messageType, senderName, false, msg.fileUrl, msg.id);
+                    }
+                })();
 
                 lastRenderedMsgCount = data.messages.length;
 
@@ -664,7 +993,7 @@ async function handleMessageSubmit() {
             break;
         }
     }
-    renderMessage(displayText, 'outgoing');
+    renderMessage(displayText, 'outgoing', '', false, '', null);
 
     // AI 호출 시 로딩 표시
     let thinkingElement = null;
@@ -673,13 +1002,14 @@ async function handleMessageSubmit() {
     }
 
     try {
+        const encryptedPayload = await encryptRoomMessage(messageText, currentRoomId);
         const response = await fetch(`${BACKEND_URL}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 roomId: currentRoomId,
                 userId: myUserId,
-                message: messageText,
+                message: encryptedPayload,
                 aiProvider: aiProvider
             })
         });
@@ -707,7 +1037,7 @@ async function handleMessageSubmit() {
 // ==========================================
 // 메시지 렌더링
 // ==========================================
-function renderMessage(text, type, senderName = "", isThinking = false, fileUrl = "") {
+function renderMessage(text, type, senderName = "", isThinking = false, fileUrl = "", messageId = null) {
     if (!chatBody) return null;
 
     const messageWrapper = document.createElement('div');
@@ -722,12 +1052,14 @@ function renderMessage(text, type, senderName = "", isThinking = false, fileUrl 
 
     const messageBox = document.createElement('div');
     messageBox.className = 'message-box';
+    if (messageId && type === 'outgoing') {
+        messageBox.dataset.messageId = String(messageId);
+    }
 
     if (isThinking) {
         messageBox.classList.add('ai-thinking');
         messageBox.textContent = text;
     } else if (fileUrl) {
-        // 파일 메시지 렌더링
         const ext = fileUrl.split('.').pop().toLowerCase();
         const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext);
 
@@ -750,17 +1082,40 @@ function renderMessage(text, type, senderName = "", isThinking = false, fileUrl 
         formatAndSetBoxContent(messageBox, text);
     }
 
+    if (type === 'outgoing' && messageId) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'message-delete-btn';
+        deleteBtn.textContent = '삭제';
+        deleteBtn.onclick = async () => {
+            const result = await fetch(`${BACKEND_URL}/api/messages/${messageId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: myUserId })
+            }).then(r => r.json()).catch(() => ({ success: false, message: '삭제 처리에 실패했습니다.' }));
+            if (result.success) {
+                showModal('메시지가 삭제되었습니다.');
+                lastRenderedMsgCount = -1;
+                fetchRoomMessages();
+            } else {
+                showModal(result.message || '삭제할 수 없습니다.');
+            }
+        };
+        messageWrapper.appendChild(deleteBtn);
+    }
+
     messageWrapper.appendChild(messageBox);
     chatBody.appendChild(messageWrapper);
     chatBody.scrollTop = chatBody.scrollHeight;
     return messageBox;
 }
 
-function updateMessageContent(messageBox, newText) {
+async function updateMessageContent(messageBox, newText) {
     if (!messageBox) return;
     messageBox.classList.remove('ai-thinking');
     messageBox.innerHTML = "";
-    formatAndSetBoxContent(messageBox, newText);
+    const decrypted = await decryptRoomMessage(newText, currentRoomId);
+    formatAndSetBoxContent(messageBox, decrypted);
     chatBody.scrollTop = chatBody.scrollHeight;
 }
 
