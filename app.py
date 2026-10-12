@@ -6,6 +6,8 @@ import os
 import requests as http_requests
 import uuid
 import time
+import hashlib
+import hmac
 from datetime import datetime
 from werkzeug.utils import secure_filename
 
@@ -31,11 +33,53 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 ALLOWED_IMAGE_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 ALLOWED_FILE_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'txt', 'zip', 'mp4', 'mp3', 'doc', 'docx', 'xls', 'xlsx', 'pptx'}
 
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'messenger-local-secret-key')
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "messenger.db")
 SERVER_START_TIME = str(time.time())
+
+
+def sign_session_token(user_id):
+    return hmac.new(app.config['SECRET_KEY'].encode('utf-8'), str(user_id).encode('utf-8'), hashlib.sha256).hexdigest()
+
+
+def verify_session_token(user_id, token):
+    if not user_id or not token:
+        return False
+    expected = sign_session_token(user_id)
+    return hmac.compare_digest(expected, str(token))
+
+
+def get_request_identity():
+    payload = request.get_json(silent=True) or {}
+    user_id = str(payload.get('userId') or request.args.get('userId') or request.headers.get('X-User-Id') or '').strip()
+    token = str(payload.get('userToken') or request.args.get('token') or request.headers.get('X-User-Token') or '').strip()
+    if not user_id or not token:
+        return None, None
+    if not verify_session_token(user_id, token):
+        return None, None
+    return user_id, token
+
+
+def normalize_admin_flag(value):
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value == 1
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {'1', 'true', 'yes', 'y', 'on'}:
+            return True
+        if normalized in {'0', 'false', 'no', 'n', 'off', ''}:
+            return False
+    try:
+        return int(value) == 1
+    except (TypeError, ValueError):
+        return str(value).strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
 
 # AI @멘션 매핑
 AI_MENTION_MAP = {
@@ -79,6 +123,13 @@ def init_db():
         openai_key TEXT DEFAULT '',
         claude_key TEXT DEFAULT '',
         grok_key TEXT DEFAULT '',
+        github_url TEXT DEFAULT '',
+        notion_url TEXT DEFAULT '',
+        linkedin_url TEXT DEFAULT '',
+        x_url TEXT DEFAULT '',
+        instagram_url TEXT DEFAULT '',
+        blog_url TEXT DEFAULT '',
+        portfolio_url TEXT DEFAULT '',
         role TEXT DEFAULT 'user',
         is_admin INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -86,7 +137,7 @@ def init_db():
 
     c.execute("PRAGMA table_info(users)")
     columns = [col[1] for col in c.fetchall()]
-    for col_name in ['gemini_key', 'openai_key', 'claude_key', 'grok_key', 'avatar', 'ai_provider', 'status_msg', 'role', 'is_admin', 'created_at']:
+    for col_name in ['gemini_key', 'openai_key', 'claude_key', 'grok_key', 'avatar', 'ai_provider', 'status_msg', 'github_url', 'notion_url', 'linkedin_url', 'x_url', 'instagram_url', 'blog_url', 'portfolio_url', 'role', 'is_admin', 'created_at']:
         if col_name not in columns:
             default = "'gemini'" if col_name == 'ai_provider' else "'user'" if col_name == 'role' else "0" if col_name == 'is_admin' else "''"
             c.execute(f"ALTER TABLE users ADD COLUMN {col_name} TEXT DEFAULT {default}")
@@ -95,6 +146,8 @@ def init_db():
             c.execute("UPDATE users SET gemini_key = api_key WHERE (gemini_key IS NULL OR gemini_key = '') AND api_key != ''")
         except Exception:
             pass
+
+    c.execute("UPDATE users SET role = CASE WHEN TRIM(COALESCE(role, '')) = '' THEN 'user' ELSE TRIM(role) END, is_admin = CASE WHEN LOWER(COALESCE(CAST(is_admin AS TEXT), '0')) IN ('1', 'true', 'yes', 'y', 'on') THEN 1 ELSE 0 END")
 
     c.execute('''CREATE TABLE IF NOT EXISTS notices (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -164,11 +217,64 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
             ('bot_gemini', '', 'Gemini 관리 봇', '관리 명령: /delete-user userId', 'https://api.dicebear.com/7.x/bottts/svg?seed=gemini', 'gemini', 'bot', 0))
 
+    c.execute("SELECT user_id FROM users WHERE user_id = 'notice'")
+    if not c.fetchone():
+        c.execute('''INSERT INTO users (user_id, password, user_name, status_msg, avatar, ai_provider, role, is_admin)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+            ('notice', '', '공지', '전체 공지사항', 'https://api.dicebear.com/7.x/bottts/svg?seed=notice', 'system', 'notice', 0))
+
     conn.commit()
     conn.close()
 
 
 init_db()
+
+
+@app.before_request
+def enforce_admin_gate():
+    if request.method == 'OPTIONS':
+        return ('', 204)
+
+    if not request.path.startswith('/api/admin'):
+        return None
+
+    if request.path == '/api/admin/notices' and request.method == 'GET':
+        return None
+
+    user_id, _ = get_request_identity()
+    if not user_id:
+        return jsonify({"success": False, "message": "관리자 권한이 필요합니다."}), 403
+
+    conn = get_db()
+    row = conn.execute("SELECT role, is_admin FROM users WHERE user_id = ?", (user_id,)).fetchone()
+    conn.close()
+
+    if not row or (not normalize_admin_flag(row['is_admin']) and str(row['role'] or '').lower() != 'admin'):
+        return jsonify({"success": False, "message": "관리자 권한이 필요합니다."}), 403
+
+    return None
+
+
+@app.route('/api/session', methods=['POST'])
+def validate_session():
+    user_id, _ = get_request_identity()
+    if not user_id:
+        return jsonify({"success": False, "message": "인증이 필요합니다."}), 401
+
+    conn = get_db()
+    row = conn.execute("SELECT user_id, user_name, role, is_admin FROM users WHERE user_id = ?", (user_id,)).fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"success": False, "message": "유저를 찾을 수 없습니다."}), 404
+
+    return jsonify({
+        "success": True,
+        "userId": row['user_id'],
+        "userName": row['user_name'],
+        "role": row['role'] or 'user',
+        "isAdmin": normalize_admin_flag(row['is_admin']) or str(row['role'] or '').lower() == 'admin'
+    })
 
 
 # ==========================================
@@ -218,28 +324,6 @@ def call_ai_provider(provider, api_key, prompt):
         return f"⚠️ AI 호출 중 오류: {str(e)}"
 
 
-# ==========================================
-# 상태 확인 / Heartbeat
-# ==========================================
-
-# Gemini API 설정 (모델명 표준화)
-GEMINI_API_KEY = input("your gemini api key: ")
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-3.6-flash')
-
-# 💡 [임시 DB] 초기 유저 데이터베이스 (기본 AI 포함)
-users_db = {
-    "bot_gemini": {
-        "password": "",
-        "userName": "🤖 Gemini AI"
-    }
-}
-
-# 채팅방 메시지 DB & 카운터
-chat_rooms_db = {}
-message_counter = 0
-
-
 @app.route('/', methods=['GET'])
 def index():
     return jsonify({"status": "running", "serverTime": SERVER_START_TIME})
@@ -279,9 +363,9 @@ def register():
     hashed = generate_password_hash(password)
     avatar = f"https://api.dicebear.com/7.x/bottts/svg?seed={user_id}"
 
-    cursor.execute('''INSERT INTO users (user_id, password, user_name, status_msg, avatar, ai_provider, gemini_key, openai_key, claude_key, grok_key)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-        (user_id, hashed, user_name, "반갑습니다!", avatar, ai_provider, gemini_key, openai_key, claude_key, grok_key))
+    cursor.execute('''INSERT INTO users (user_id, password, user_name, status_msg, avatar, ai_provider, gemini_key, openai_key, claude_key, grok_key, role, is_admin)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        (user_id, hashed, user_name, "반갑습니다!", avatar, ai_provider, gemini_key, openai_key, claude_key, grok_key, 'user', 0))
 
     conn.commit()
     conn.close()
@@ -308,6 +392,7 @@ def login():
         if not check_password_hash(user["password"], user_pw):
             return jsonify({"success": False, "error": "비밀번호가 일치하지 않습니다."}), 401
 
+    session_token = sign_session_token(user["user_id"])
     return jsonify({
         "success": True,
         "userId": user["user_id"],
@@ -315,8 +400,9 @@ def login():
         "statusMsg": user["status_msg"] or "",
         "avatar": user["avatar"] or "",
         "aiProvider": user["ai_provider"] or "gemini",
-        "isAdmin": bool(user["is_admin"] or user["role"] == 'admin'),
+        "isAdmin": normalize_admin_flag(user["is_admin"]) or str(user["role"] or '').lower() == 'admin',
         "role": user["role"] or 'user',
+        "sessionToken": session_token,
         "serverTime": SERVER_START_TIME
     })
 
@@ -344,7 +430,7 @@ def search_users():
                 "statusMsg": row['status_msg'] or "",
                 "avatar": row['avatar'] or f"https://api.dicebear.com/7.x/bottts/svg?seed={uid}",
                 "role": row['role'] or 'user',
-                "isAdmin": bool(row['is_admin'])
+                "isAdmin": normalize_admin_flag(row['is_admin'])
             })
 
     return jsonify({"success": True, "users": result})
@@ -373,8 +459,15 @@ def get_profile(user_id):
         "openaiKey": u["openai_key"] or "",
         "claudeKey": u["claude_key"] or "",
         "grokKey": u["grok_key"] or "",
+        "githubUrl": u["github_url"] or "",
+        "notionUrl": u["notion_url"] or "",
+        "linkedinUrl": u["linkedin_url"] or "",
+        "xUrl": u["x_url"] or "",
+        "instagramUrl": u["instagram_url"] or "",
+        "blogUrl": u["blog_url"] or "",
+        "portfolioUrl": u["portfolio_url"] or "",
         "role": u["role"] or 'user',
-        "isAdmin": bool(u["is_admin"] or u["role"] == 'admin')
+        "isAdmin": normalize_admin_flag(u["is_admin"]) or str(u["role"] or '').lower() == 'admin'
     })
 
 
@@ -400,10 +493,17 @@ def update_profile():
     openai_key = data.get('openaiKey', '').strip()
     claude_key = data.get('claudeKey', '').strip()
     grok_key = data.get('grokKey', '').strip()
+    github_url = str(data.get('githubUrl', '') or '').strip()
+    notion_url = str(data.get('notionUrl', '') or '').strip()
+    linkedin_url = str(data.get('linkedinUrl', '') or '').strip()
+    x_url = str(data.get('xUrl', '') or '').strip()
+    instagram_url = str(data.get('instagramUrl', '') or '').strip()
+    blog_url = str(data.get('blogUrl', '') or '').strip()
+    portfolio_url = str(data.get('portfolioUrl', '') or '').strip()
 
     conn.execute('''UPDATE users SET user_name=?, status_msg=?, avatar=?, ai_provider=?,
-        gemini_key=?, openai_key=?, claude_key=?, grok_key=? WHERE user_id=?''',
-        (user_name, status_msg, avatar, ai_provider, gemini_key, openai_key, claude_key, grok_key, user_id))
+        gemini_key=?, openai_key=?, claude_key=?, grok_key=?, github_url=?, notion_url=?, linkedin_url=?, x_url=?, instagram_url=?, blog_url=?, portfolio_url=? WHERE user_id=?''',
+        (user_name, status_msg, avatar, ai_provider, gemini_key, openai_key, claude_key, grok_key, github_url, notion_url, linkedin_url, x_url, instagram_url, blog_url, portfolio_url, user_id))
     conn.commit()
 
     updated = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchone()
@@ -420,7 +520,14 @@ def update_profile():
         "geminiKey": updated["gemini_key"],
         "openaiKey": updated["openai_key"],
         "claudeKey": updated["claude_key"],
-        "grokKey": updated["grok_key"]
+        "grokKey": updated["grok_key"],
+        "githubUrl": updated["github_url"] or "",
+        "notionUrl": updated["notion_url"] or "",
+        "linkedinUrl": updated["linkedin_url"] or "",
+        "xUrl": updated["x_url"] or "",
+        "instagramUrl": updated["instagram_url"] or "",
+        "blogUrl": updated["blog_url"] or "",
+        "portfolioUrl": updated["portfolio_url"] or ""
     })
 
 
@@ -442,8 +549,9 @@ def update_password():
         conn.close()
         return jsonify({"success": False, "message": "유효하지 않은 사용자입니다."}), 400
 
-    if user["password"] and user["password"] != '':
-        if not current_password or not check_password_hash(user["password"], current_password):
+    stored_password = (user["password"] or '').strip()
+    if stored_password:
+        if not current_password or not check_password_hash(stored_password, current_password):
             conn.close()
             return jsonify({"success": False, "message": "현재 비밀번호가 올바르지 않습니다."}), 401
 
@@ -523,11 +631,14 @@ def get_messages(room_id):
 @app.route('/api/read-status', methods=['POST'])
 def update_read_status():
     data = request.json or {}
-    user_id = data.get('userId', '')
+    user_id, _ = get_request_identity()
+    if not user_id:
+        return jsonify({"success": False, "message": "인증이 필요합니다."}), 401
+
     room_id = data.get('roomId', '')
     last_read_id = data.get('lastReadId', 0)
 
-    if not user_id or not room_id:
+    if not room_id:
         return jsonify({"success": False}), 400
 
     conn = get_db()
@@ -541,9 +652,9 @@ def update_read_status():
 @app.route('/api/messages/<int:message_id>', methods=['DELETE'])
 def delete_message(message_id):
     data = request.json or {}
-    user_id = (data.get('userId') or request.args.get('userId') or '').strip()
+    user_id, _ = get_request_identity()
     if not user_id:
-        return jsonify({"success": False, "message": "사용자 정보가 필요합니다."}), 400
+        return jsonify({"success": False, "message": "인증이 필요합니다."}), 401
 
     conn = get_db()
     message = conn.execute("SELECT sender_id, created_at FROM messages WHERE id = ?", (message_id,)).fetchone()
@@ -619,7 +730,7 @@ def is_admin_user(conn, user_id):
     row = conn.execute("SELECT is_admin, role FROM users WHERE user_id = ?", (user_id,)).fetchone()
     if not row:
         return False
-    return bool(row['is_admin']) or (row['role'] or '').lower() == 'admin'
+    return normalize_admin_flag(row['is_admin']) or (row['role'] or '').lower() == 'admin'
 
 
 def delete_user_account(user_id):
@@ -633,7 +744,7 @@ def delete_user_account(user_id):
         conn.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
         conn.commit()
         conn.close()
-        return {"success": True, "message": f"'{user_id}' 사용자를 삭제했습니다."}
+        return {"success": True, "message": f"'{user_id}'님의 계정이 삭제되었습니다."}
     except Exception as exc:
         conn.close()
         return {"success": False, "message": f"삭제 중 오류: {exc}"}
@@ -645,8 +756,11 @@ def delete_user_account(user_id):
 @app.route('/api/chat', methods=['POST'])
 def handle_chat():
     data = request.json or {}
+    user_id, _ = get_request_identity()
+    if not user_id:
+        return jsonify({"success": False, "error": "인증이 필요합니다."}), 401
+
     room_id = data.get('roomId')
-    user_id = data.get('userId')
     user_message = (data.get('message', '') or '').strip()
     req_ai_provider = data.get('aiProvider', '')
     file_url = data.get('fileUrl', '')
@@ -723,7 +837,6 @@ def handle_chat():
 @app.route('/api/admin/notices', methods=['GET', 'POST'])
 def admin_notices():
     payload = request.get_json(silent=True) or {}
-    user_id = request.args.get('userId', '') or payload.get('userId', '')
     conn = get_db()
 
     if request.method == 'GET':
@@ -741,7 +854,12 @@ def admin_notices():
             } for row in rows]
         })
 
-    if not user_id or not is_admin_user(conn, user_id):
+    user_id, _ = get_request_identity()
+    if not user_id:
+        conn.close()
+        return jsonify({"success": False, "message": "관리자 인증이 필요합니다."}), 401
+
+    if not is_admin_user(conn, user_id):
         conn.close()
         return jsonify({"success": False, "message": "관리자만 공지를 등록할 수 있습니다."}), 403
 
@@ -759,9 +877,12 @@ def admin_notices():
 
 @app.route('/api/admin/notices/<int:notice_id>', methods=['DELETE'])
 def delete_notice(notice_id):
-    user_id = request.args.get('userId', '')
     conn = get_db()
-    if not user_id or not is_admin_user(conn, user_id):
+    user_id, _ = get_request_identity()
+    if not user_id:
+        conn.close()
+        return jsonify({"success": False, "message": "관리자 인증이 필요합니다."}), 401
+    if not is_admin_user(conn, user_id):
         conn.close()
         return jsonify({"success": False, "message": "관리자 권한이 필요합니다."}), 403
 
@@ -773,9 +894,12 @@ def delete_notice(notice_id):
 
 @app.route('/api/admin/credentials', methods=['GET'])
 def admin_credentials():
-    user_id = request.args.get('userId', '')
     conn = get_db()
-    if not user_id or not is_admin_user(conn, user_id):
+    user_id, _ = get_request_identity()
+    if not user_id:
+        conn.close()
+        return jsonify({"success": False, "message": "관리자 인증이 필요합니다."}), 401
+    if not is_admin_user(conn, user_id):
         conn.close()
         return jsonify({"success": False, "message": "관리자 권한이 필요합니다."}), 403
     conn.close()
@@ -784,13 +908,16 @@ def admin_credentials():
 
 @app.route('/api/admin/users', methods=['GET'])
 def admin_users():
-    user_id = request.args.get('userId', '')
     conn = get_db()
-    if not user_id or not is_admin_user(conn, user_id):
+    user_id, _ = get_request_identity()
+    if not user_id:
         conn.close()
-        return jsonify({"success": False, "users": []}), 403
+        return jsonify({"success": False, "users": [], "message": "관리자 인증이 필요합니다."}), 401
+    if not is_admin_user(conn, user_id):
+        conn.close()
+        return jsonify({"success": False, "users": [], "message": "관리자 권한이 필요합니다."}), 403
 
-    rows = conn.execute("SELECT user_id, user_name, status_msg, avatar, role, is_admin FROM users WHERE user_id NOT IN ('admin', 'bot_ai', 'bot_gemini') ORDER BY user_name COLLATE NOCASE ASC").fetchall()
+    rows = conn.execute("SELECT user_id, user_name, status_msg, avatar, role, is_admin FROM users WHERE user_id NOT IN ('admin', 'bot_ai', 'bot_gemini', 'notice') ORDER BY user_name COLLATE NOCASE ASC").fetchall()
     conn.close()
     return jsonify({
         "success": True,
@@ -800,16 +927,19 @@ def admin_users():
             "statusMsg": row['status_msg'] or "",
             "avatar": row['avatar'] or "",
             "role": row['role'] or 'user',
-            "isAdmin": bool(row['is_admin'])
+            "isAdmin": normalize_admin_flag(row['is_admin'])
         } for row in rows]
     })
 
 
 @app.route('/api/admin/users/<user_id>', methods=['DELETE'])
 def delete_admin_user(user_id):
-    request_user = request.args.get('userId', '')
     conn = get_db()
-    if not request_user or not is_admin_user(conn, request_user):
+    request_user, _ = get_request_identity()
+    if not request_user:
+        conn.close()
+        return jsonify({"success": False, "message": "관리자 인증이 필요합니다."}), 401
+    if not is_admin_user(conn, request_user):
         conn.close()
         return jsonify({"success": False, "message": "관리자 권한이 필요합니다."}), 403
 
@@ -819,31 +949,45 @@ def delete_admin_user(user_id):
 
 @app.route('/api/admin/users/<user_id>/reset-password', methods=['POST'])
 def reset_user_password(user_id):
-    payload = request.get_json(silent=True) or {}
-    request_user = payload.get('userId') or request.args.get('userId', '')
     conn = get_db()
-    if not request_user or not is_admin_user(conn, request_user):
+    request_user, _ = get_request_identity()
+    if not request_user:
+        conn.close()
+        return jsonify({"success": False, "message": "관리자 인증이 필요합니다."}), 401
+    if not is_admin_user(conn, request_user):
         conn.close()
         return jsonify({"success": False, "message": "관리자 권한이 필요합니다."}), 403
     if user_id in ('admin', 'bot_ai', 'bot_gemini'):
         conn.close()
         return jsonify({"success": False, "message": "시스템 계정은 비밀번호를 초기화할 수 없습니다."}), 400
 
-    conn.execute("UPDATE users SET password = ? WHERE user_id = ?", (generate_password_hash('12345678'), user_id))
-    conn.commit()
+    try:
+        conn.execute("DELETE FROM messages WHERE sender_id = ? OR room_id LIKE ? OR room_id LIKE ?", (user_id, f'%{user_id}%', f'%{user_id}%'))
+        conn.execute("DELETE FROM read_status WHERE user_id = ?", (user_id,))
+        conn.execute("UPDATE users SET password = ? WHERE user_id = ?", (generate_password_hash('12345678'), user_id))
+        conn.commit()
+        message = f"'{user_id}'님의 비밀번호를 초기화했고, 대화 기록과 읽음 상태를 모두 삭제했습니다."
+    except Exception as exc:
+        conn.rollback()
+        conn.close()
+        return jsonify({"success": False, "message": f"초기화 중 오류: {exc}"}), 500
+
     conn.close()
-    return jsonify({"success": True, "message": f"'{user_id}' 계정의 비밀번호를 12345678로 초기화했습니다."})
+    return jsonify({"success": True, "message": message})
 
 
 @app.route('/api/admin/summary', methods=['GET'])
 def admin_summary():
-    user_id = request.args.get('userId', '')
     conn = get_db()
-    if not user_id or not is_admin_user(conn, user_id):
+    user_id, _ = get_request_identity()
+    if not user_id:
         conn.close()
-        return jsonify({"success": False}), 403
+        return jsonify({"success": False, "message": "관리자 인증이 필요합니다."}), 401
+    if not is_admin_user(conn, user_id):
+        conn.close()
+        return jsonify({"success": False, "message": "관리자 권한이 필요합니다."}), 403
 
-    total_users = conn.execute("SELECT COUNT(*) AS c FROM users WHERE user_id NOT IN ('bot_ai', 'bot_gemini')").fetchone()['c']
+    total_users = conn.execute("SELECT COUNT(*) AS c FROM users WHERE user_id NOT IN ('bot_ai', 'bot_gemini', 'notice')").fetchone()['c']
     admin_users = conn.execute("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' OR is_admin = 1").fetchone()['c']
     notice_count = conn.execute("SELECT COUNT(*) AS c FROM notices").fetchone()['c']
     conn.close()

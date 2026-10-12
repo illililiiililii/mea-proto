@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="theme.js"></script>
+    <link rel="stylesheet" href="stayle.css">
+    <title>관리자 페이지</title>
+    <style>
+        :root {
+            --bg-main: #f3f4f6;
+            --bg-panel: #ffffff;
+            --bg-sub: #eef2ff;
+            --bg-soft: #f8fafc;
+            --border: #dfe6ee;
+            --text-main: #111827;
+            --text-sub: #6b7280;
+            --accent: #2563eb;
+            --accent-soft: rgba(37, 99, 235, 0.10);
+            --danger: #ef4444;
+            --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        html[data-theme="dark"] {
+            --bg-main: #0f172a;
+            --bg-panel: #111827;
+            --bg-sub: #172033;
+            --bg-soft: #131d2d;
+            --border: #2d3b52;
+            --text-main: #e5edf9;
+            --text-sub: #a3b3c7;
+            --accent: #60a5fa;
+            --accent-soft: rgba(96, 165, 250, 0.14);
+            --danger: #f87171;
+            --shadow: 0 10px 30px rgba(2, 6, 23, 0.45);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Nanum Gothic', sans-serif;
+        }
+
+        button, input, textarea {
+            font: inherit;
+        }
+
+        .admin-shell {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 20px 40px;
+        }
+
+        .admin-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 14px 18px;
+            margin-bottom: 16px;
+        }
+
+        .admin-topbar h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 800;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-btn,
+        .admin-line-btn,
+        .admin-action-btn,
+        .theme-toggle-btn,
+        .mini-btn {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-soft);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .admin-btn,
+        .admin-action-btn,
+        .mini-btn {
+            padding: 10px 14px;
+            font-weight: 700;
+        }
+
+        .admin-btn {
+            background: var(--accent);
+            color: white;
+            border-color: transparent;
+        }
+
+        .admin-action-btn.danger {
+            background: rgba(239, 68, 68, 0.08);
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        .admin-header-spacer {
+            width: 110px;
+        }
+
+        .admin-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .tab-btn {
+            border: 1px solid var(--border);
+            background: var(--bg-panel);
+            color: var(--text-main);
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: transparent;
+        }
+
+        .admin-section-shell {
+            position: relative;
+            min-height: 540px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .admin-section {
+            position: absolute;
+            inset: 0;
+            padding: 18px;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+            transform: translateY(8px);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+
+        .admin-section.active {
+            opacity: 1;
+            pointer-events: auto;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .section-head h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .section-head span {
+            color: var(--text-sub);
+            font-size: 12px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .summary-card {
+            background: var(--bg-sub);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 14px;
+        }
+
+        .summary-label {
+            display: block;
+            color: var(--text-sub);
+            font-size: 11px;
+            margin-bottom: 10px;
+            letter-spacing: 0.04em;
+        }
+
+        .summary-value {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .notice-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .notice-form input,
+        .notice-form textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-soft);
+            color: var(--text-main);
+            padding: 11px 12px;
+            outline: none;
+        }
+
+        .notice-form textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .inline-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .list-box {
+            border-top: 1px solid var(--border);
+            padding-top: 18px;
+        }
+
+        .list-box h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
+
+        .empty-state {
+            color: var(--text-sub);
+            background: var(--bg-soft);
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .admin-user-list,
+        .admin-notice-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .admin-user-row,
+        .admin-notice-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .admin-user-row strong,
+        .admin-notice-row strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .admin-user-row small,
+        .admin-notice-row small {
+            color: var(--text-sub);
+            line-height: 1.5;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .admin-user-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .mini-btn {
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+
+        .mini-btn.danger {
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.06);
+        }
+
+        .theme-toggle-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            font-size: 18px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .select-ui {
+            width: min(420px, 100%);
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 18px;
+        }
+
+        .select-inbox {
+            color: var(--text-main);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .btn-box {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-y {
+            border: none;
+            border-radius: 10px;
+            background: var(--accent);
+            color: white;
+            padding: 10px 18px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        @media (max-width: 760px) {
+            .admin-topbar {
+                flex-wrap: wrap;
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, minmax(120px, 1fr));
+            }
+
+            .section-head {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-shell">
+        <header class="admin-topbar">
+            <div class="admin-header-spacer">
+                <button type="button" id="back-btn" class="admin-line-btn">← 돌아가기</button>
+            </div>
+            <h1>관리자</h1>
+            <div class="topbar-actions">
+                <button type="button" class="theme-toggle-btn" aria-label="테마 변경">🌙</button>
+                <button type="button" id="logout-btn" class="admin-action-btn danger">로그아웃</button>
+            </div>
+        </header>
+
+        <nav class="admin-tabs" aria-label="관리자 메뉴">
+            <button type="button" class="tab-btn active" data-tab="overview">요약</button>
+            <button type="button" class="tab-btn" data-tab="notices">공지</button>
+            <button type="button" class="tab-btn" data-tab="users">유저 관리</button>
+        </nav>
+
+        <div class="admin-section-shell">
+            <section id="section-overview" class="admin-section active">
+                <div class="section-head">
+                    <h2>관리 현황</h2>
+                    <span>실시간 요약</span>
+                </div>
+                <div id="admin-summary" class="summary-grid"></div>
+            </section>
+
+            <section id="section-notices" class="admin-section">
+                <div class="section-head">
+                    <h2>공지 관리</h2>
+                    <span>공지 등록 / 삭제</span>
+                </div>
+
+                <form id="admin-notice-form" class="notice-form">
+                    <input id="notice-title" type="text" maxlength="80" placeholder="공지 제목 입력">
+                    <textarea id="notice-content" placeholder="공지 내용을 입력해 주세요"></textarea>
+                    <div class="inline-actions">
+                        <button type="submit" class="admin-btn">공지 등록</button>
+                    </div>
+                </form>
+
+                <div class="list-box">
+                    <h3>공지 목록</h3>
+                    <div id="admin-notice-list" class="admin-notice-list"></div>
+                </div>
+            </section>
+
+            <section id="section-users" class="admin-section">
+                <div class="section-head">
+                    <h2>유저 관리</h2>
+                    <span>비밀번호 초기화 / 계정 삭제</span>
+                </div>
+                <div id="admin-user-list" class="admin-user-list"></div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:5000';
+        const myUserId = sessionStorage.getItem('myUserId') || '';
+
+        if (!myUserId) {
+            window.location.href = 'index.html';
+        }
+
+        const noticeForm = document.getElementById('admin-notice-form');
+        const noticeTitleInput = document.getElementById('notice-title');
+        const noticeContentInput = document.getElementById('notice-content');
+        const adminSummary = document.getElementById('admin-summary');
+        const adminNoticeList = document.getElementById('admin-notice-list');
+        const adminUserList = document.getElementById('admin-user-list');
+        const backBtn = document.getElementById('back-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        function escapeHtml(value = '') {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function setActiveTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach((button) => {
+                const isActive = button.dataset.tab === tabName;
+                button.classList.toggle('active', isActive);
+            });
+
+            document.querySelectorAll('.admin-section').forEach((section) => {
+                const isActive = section.id === `section-${tabName}`;
+                section.classList.toggle('active', isActive);
+            });
+        }
+
+        document.querySelectorAll('.tab-btn').forEach((button) => {
+            button.addEventListener('click', () => setActiveTab(button.dataset.tab));
+        });
+
+        function showAdminModal(msg, onDone) {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay show';
+            overlay.innerHTML = `
+                <div class="select-ui">
+                    <div class="select-inbox">${escapeHtml(msg || '처리되었습니다.')}</div>
+                    <div class="btn-box">
+                        <button type="button" class="btn-y" id="admin-modal-ok">확인</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            const okButton = document.getElementById('admin-modal-ok');
+            okButton.onclick = () => {
+                overlay.remove();
+                if (typeof onDone === 'function') onDone();
+            };
+        }
+
+        function alertMessage(msg, onDone) {
+            showAdminModal(msg, onDone);
+        }
+
+        if (backBtn) backBtn.onclick = () => window.location.href = 'index.html';
+        if (logoutBtn) logoutBtn.onclick = () => {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        };
+
+        async function ensureAdminAccess() {
+            const userId = sessionStorage.getItem('myUserId') || '';
+            const token = sessionStorage.getItem('authToken') || '';
+
+            if (!userId || !token) {
+                window.location.href = 'index.html';
+                return false;
+            }
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, userToken: token })
+                });
+                const data = await res.json();
+                const isAdmin = Boolean(data.success && (data.isAdmin || data.role === 'admin'));
+
+                if (!isAdmin) {
+                    alertMessage('관리자 권한이 없습니다.', () => window.location.href = 'index.html');
+                    return false;
+                }
+
+                return true;
+            } catch (error) {
+                alertMessage('관리자 권한을 확인할 수 없습니다.', () => window.location.href = 'index.html');
+                return false;
+            }
+        }
+
+        async function fetchSummary() {
+            const token = sessionStorage.getItem('authToken') || '';
+            const res = await fetch(`${BACKEND_URL}/api/admin/summary?userId=${encodeURIComponent(myUserId)}&token=${encodeURIComponent(token)}`);
+            const data = await res.json();
+
+            if (!data.success) {
+                adminSummary.innerHTML = '<div class="empty-state">요약 정보를 불러오지 못했습니다.</div>';
+                return;
+            }
+
+            const credentialsRes = await fetch(`${BACKEND_URL}/api/admin/credentials?userId=${encodeURIComponent(myUserId)}&token=${encodeURIComponent(token)}`);
+            const credentialsData = credentialsRes.ok ? await credentialsRes.json() : null;
+
+            adminSummary.innerHTML = `
+                <div class="summary-card">
+                    <span class="summary-label">총 사용자</span>
+                    <span class="summary-value">${data.totalUsers || 0}</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">관리자</span>
+                    <span class="summary-value">${data.adminUsers || 0}</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">공지</span>
+                    <span class="summary-value">${data.noticeCount || 0}</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-label">기본 비밀번호</span>
+                    <span class="summary-value">${credentialsData && credentialsData.success ? escapeHtml(credentialsData.defaultPassword || '12345678') : '12345678'}</span>
+                </div>
+            `;
+        }
+
+        async function fetchNotices() {
+            const token = sessionStorage.getItem('authToken') || '';
+            const res = await fetch(`${BACKEND_URL}/api/admin/notices?userId=${encodeURIComponent(myUserId)}&token=${encodeURIComponent(token)}`);
+            const data = await res.json();
+            const notices = Array.isArray(data.notices) ? data.notices : [];
+
+            if (!notices.length) {
+                adminNoticeList.innerHTML = '<div class="empty-state">등록된 공지가 없습니다.</div>';
+                return;
+            }
+
+            adminNoticeList.innerHTML = notices.map((notice) => `
+                <div class="admin-notice-row">
+                    <div>
+                        <strong>${escapeHtml(notice.title)}</strong>
+                        <small>${escapeHtml(notice.content)}</small>
+                    </div>
+                    <button type="button" class="mini-btn danger" data-notice-id="${escapeHtml(String(notice.id))}">삭제</button>
+                </div>
+            `).join('');
+
+            adminNoticeList.querySelectorAll('[data-notice-id]').forEach((btn) => {
+                btn.onclick = async () => {
+                    const noticeId = btn.getAttribute('data-notice-id');
+                    const token = sessionStorage.getItem('authToken') || '';
+                    const res = await fetch(`${BACKEND_URL}/api/admin/notices/${noticeId}?userId=${encodeURIComponent(myUserId)}&token=${encodeURIComponent(token)}`, { method: 'DELETE' });
+                    const result = await res.json();
+                    alertMessage(result.message || '공지 삭제 완료');
+                    await fetchNotices();
+                    await fetchSummary();
+                };
+            });
+        }
+
+        async function fetchUsers() {
+            const token = sessionStorage.getItem('authToken') || '';
+            const res = await fetch(`${BACKEND_URL}/api/admin/users?userId=${encodeURIComponent(myUserId)}&token=${encodeURIComponent(token)}`);
+            const data = await res.json();
+            const users = Array.isArray(data.users) ? data.users : [];
+
+            if (!users.length) {
+                adminUserList.innerHTML = '<div class="empty-state">관리할 유저가 없습니다.</div>';
+                return;
+            }
+
+            adminUserList.innerHTML = users.map((user) => `
+                <div class="admin-user-row">
+                    <div>
+                        <strong>${escapeHtml(user.userName)}</strong>
+                        <small>@${escapeHtml(user.userId)}</small>
+                    </div>
+                    <div class="admin-user-actions">
+                        <button type="button" class="mini-btn" data-user-id="${escapeHtml(String(user.userId))}">비밀번호 초기화</button>
+                        <button type="button" class="mini-btn danger" data-user-delete-id="${escapeHtml(String(user.userId))}">계정 삭제</button>
+                    </div>
+                </div>
+            `).join('');
+
+            adminUserList.querySelectorAll('[data-user-id]').forEach((btn) => {
+                btn.onclick = async () => {
+                    const targetId = btn.getAttribute('data-user-id');
+                    const token = sessionStorage.getItem('authToken') || '';
+                    const res = await fetch(`${BACKEND_URL}/api/admin/users/${encodeURIComponent(targetId)}/reset-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: myUserId, userToken: token })
+                    });
+                    const result = await res.json();
+                    alertMessage(result.message || '초기화 완료');
+                    await fetchUsers();
+                    await fetchSummary();
+                };
+            });
+
+            adminUserList.querySelectorAll('[data-user-delete-id]').forEach((btn) => {
+                btn.onclick = async () => {
+                    const targetId = btn.getAttribute('data-user-delete-id');
+                    const token = sessionStorage.getItem('authToken') || '';
+                    const res = await fetch(`${BACKEND_URL}/api/admin/users/${encodeURIComponent(targetId)}?userId=${encodeURIComponent(myUserId)}&token=${encodeURIComponent(token)}`, { method: 'DELETE' });
+                    const result = await res.json();
+                    alertMessage(result.message || '삭제 완료');
+                    await fetchUsers();
+                    await fetchSummary();
+                };
+            });
+        }
+
+        if (noticeForm) {
+            noticeForm.onsubmit = async (event) => {
+                event.preventDefault();
+                const title = noticeTitleInput.value.trim();
+                const content = noticeContentInput.value.trim();
+
+                if (!title || !content) {
+                    alertMessage('제목과 내용을 입력해 주세요.');
+                    return;
+                }
+
+                const token = sessionStorage.getItem('authToken') || '';
+                const res = await fetch(`${BACKEND_URL}/api/admin/notices?userId=${encodeURIComponent(myUserId)}&token=${encodeURIComponent(token)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content, userId: myUserId, userToken: token })
+                });
+                const result = await res.json();
+                alertMessage(result.message || '공지 등록 완료');
+                noticeForm.reset();
+                await fetchNotices();
+                await fetchSummary();
+            };
+        }
+
+        (async function initAdminPage() {
+            const ok = await ensureAdminAccess();
+            if (!ok) return;
+            await fetchSummary();
+            await fetchNotices();
+            await fetchUsers();
+        })();
+    </script>
+</body>
+</html>
