@@ -184,7 +184,7 @@ header.header {
 
 .my-profile-card {
     margin: auto 10px 10px;
-    padding: 12px;
+    padding: 10px;
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: linear-gradient(180deg, rgba(15, 23, 42, 0.08), rgba(148, 163, 184, 0.05));
@@ -196,6 +196,8 @@ header.header {
     position: sticky;
     bottom: 0;
     z-index: 2;
+    background-color: var(--bg-navi);
+    margin-bottom: 10px;
 }
 
 .my-profile-card-header {

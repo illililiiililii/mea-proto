@@ -164,14 +164,14 @@ if (loginPwToggle && loginPwInput) {
     loginPwToggle.onclick = function () {
         const isPassword = loginPwInput.type === 'password';
         loginPwInput.type = isPassword ? 'text' : 'password';
-        loginPwToggle.textContent = isPassword ? '👁️' : '';
+        loginPwToggle.textContent = isPassword ? '🫣' : '😊';
     };
 }
 if (regPwToggle && regPwInput) {
     regPwToggle.onclick = function () {
         const isPassword = regPwInput.type === 'password';
         regPwInput.type = isPassword ? 'text' : 'password';
-        regPwToggle.textContent = isPassword ? '👁️' : '❌';
+        regPwToggle.textContent = isPassword ? '🫣' : '😊';
     };
 }
 
@@ -862,11 +862,14 @@ async function renderNoticeThread() {
 
         const isAdmin = Boolean(myUserId && (myRole === 'admin' || myRole === 'system')) || myUserId === 'admin';
         chatBody.innerHTML = notices.map((notice) => `
-            <div class="message incoming" style="max-width:100%;">
-                <div class="message-sender-name">공지</div>
+            <div class="notice" style="max-width:100%; text-align: center; align-items: center;">
+                <div class="message-sender-name" style="text-align: center; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 10px; font-size: 2vh; color: var(--text-secondary);">
+                    --------------------------------------------------------------
+                    
+                </div>
                 <div class="message-bubble" style="max-width:100%;">
-                    <div style="font-weight:70%; margin-bottom:6px; color: var(--text-primary);">${notice.title}</div>
-                    <div style="white-space:pre-wrap; font-weight:20%; line-height:1.6; color: var(--text-primary);">${notice.content}</div>
+                    <h2 style="font-weight:70%; margin-bottom:6px; color: var(--text-primary);">${notice.title}</h2>
+                    <h4 style="white-space:pre-wrap; font-weight:20%; line-height:1.6; color: var(--text-primary);">${notice.content}</h4>
                 </div>
             </div>
         `).join('');

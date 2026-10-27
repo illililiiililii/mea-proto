@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="theme.js"></script>
     <link rel="stylesheet" href="stayle.css">
-    <title>관리자 페이지</title>
+    <title>관리 페이지</title>
     <style>
         :root {
             --bg-main: #f3f4f6;
@@ -49,7 +49,7 @@
         }
 
         .admin-shell {
-            max-width: 1100px;
+            width: min(1000px, 100%);
             margin: 0 auto;
             padding: 24px 20px 40px;
         }
@@ -145,7 +145,7 @@
             border: 1px solid var(--border);
             border-radius: 18px;
             box-shadow: var(--shadow);
-            overflow: hidden;
+            overflow: auto;
         }
 
         .admin-section {
@@ -186,7 +186,7 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(140px, 1fr));
+            grid-template-columns: repeat(4, max(1fr));
             gap: 12px;
         }
 
@@ -374,6 +374,104 @@
                 align-items: flex-start;
             }
         }
+
+        adduser-modal {
+            width: calc(100vw - 28px);
+            padding: 24px 20px;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(320px, calc(110vw - 32px));
+            max-height: calc(40vh - 32px);
+            overflow-y: auto;
+            border-radius: 16px;
+            background: var(--bg-main);
+            box-shadow: 0 10px 30px rgba(0,0,0,.2);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+            
+        }
+        adduser-modal h2 {
+            margin: 0 0 10px;
+            font-size: 20px;
+            color: var(--text-primary);
+        }
+        adduser-modal input {
+            gap: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+            min-width: 0;
+            color: var(--text-primary);
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            background: var(--bg-chat-input);
+        }
+        adduser-modal input:focus {
+            border-color: #007aff;
+        }
+        adduser-modal button {
+            margin-top: 2vh;
+            align-items: center;
+            padding: 12px;
+            background: var(--button-color);
+            color: #fff;
+            border: none;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        adduser-modal button:hover {
+            background: #0056b3;
+        }
+        .password-container {
+            text-align: center;
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .pw-toggle-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: auto !important;
+            height: auto !important;
+            font-size: 18px;
+            cursor: pointer;
+            line-height: 1;
+            z-index: 2;
+        }
+        button:hover {
+            background: var(--accent-soft);
+        }
+        .admin-btn:hover {
+            background: var(--accent-soft);
+        }
+        admin-action-btn:hover {
+            background: rgba(239, 68, 68, 0.12);
+        }
+        .admin-user-list{
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -382,7 +480,7 @@
             <div class="admin-header-spacer">
                 <button type="button" id="back-btn" class="admin-line-btn">← 돌아가기</button>
             </div>
-            <h1>관리자</h1>
+            <h1>관리 페이지</h1>
             <div class="topbar-actions">
                 <button type="button" class="theme-toggle-btn" aria-label="테마 변경">🌙</button>
                 <button type="button" id="logout-btn" class="admin-action-btn danger">로그아웃</button>
@@ -424,13 +522,32 @@
                 </div>
             </section>
 
-            <section id="section-users" class="admin-section">
+            <section id="section-users" class="admin-section" >
                 <div class="section-head">
                     <h2>유저 관리</h2>
                     <span>비밀번호 초기화 / 계정 삭제</span>
+                    <button id="add-user-btn" class="admin-btn" style="text-align: center;">유저 추가</button>
                 </div>
-                <div id="admin-user-list" class="admin-user-list"></div>
+                <div class="list-box" style="overflow-y: auto;">
+                    <h3>유저 목록</h3>
+                    <div id="admin-user-list" class="admin-user-list" ></div>
+                </div>
             </section>
+
+            <adduser-modal id="add-user-modal" style="display: none;">
+                <button type="button" id="close-add-user-modal" class="pw-toggle-btn" style="position: absolute; top: 18px; right: 15px; font-size: 20px; background-color: #ff0000; color: var(--text-main);">X</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <h2 style="margin: 0; font-size: 20px;">새로운 유저 추가</h2>
+                </div>
+                <form id="add-user-form" class="add-user-form">
+                    <input type="text" id="add-id" placeholder="아이디 입력" required>
+                    <div class="password-container">
+                        <input type="password" id="add-pw" placeholder="비밀번호 입력">
+                        <button type="button" id="add-pw-toggle" class="pw-toggle-btn">😊</button>
+                    </div>
+                    <button type="submit">생성</button>
+                </form>
+            </adduser-modal>
         </div>
     </div>
 
@@ -450,6 +567,56 @@
         const adminUserList = document.getElementById('admin-user-list');
         const backBtn = document.getElementById('back-btn');
         const logoutBtn = document.getElementById('logout-btn');
+        const addUserBtn = document.getElementById('add-user-btn');
+        const addUserModal = document.getElementById('add-user-modal');
+        const addUserForm = document.getElementById('add-user-form');
+        const addIdInput = document.getElementById('add-id');
+        const addPwInput = document.getElementById('add-pw');
+        const closeAddUserModalBtn = document.getElementById('close-add-user-modal');
+
+        function showModal(msg, onConfirm = null) {
+            let overlay = document.querySelector('.modal-overlay.dynamic-modal');
+            
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'modal-overlay dynamic-modal';
+                overlay.innerHTML = `
+                    <style>
+                        .modal-overlay.dynamic-modal button:hover {
+                            background: var(--accent-soft);
+                        }
+                    </style>
+                    <div class="select-ui">
+                        <div class="select-inbox" id="modal-msg-text"></div>
+                        <div class="btn-box">
+                            <button type="button" class="btn-y" id="modal-ok-btn">확인</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            }
+
+            const msgText = overlay.querySelector('#modal-msg-text');
+            const okBtn = overlay.querySelector('#modal-ok-btn');
+
+            msgText.textContent = msg;
+            
+            // 모달 표시
+            overlay.classList.add('show');
+            overlay.style.display = 'flex'; // CSS 불일치 대비 보장
+
+            // 기존 이벤트 핸들러 초기화 후 재등록
+            okBtn.onclick = (e) => {
+                e.preventDefault();
+                overlay.classList.remove('show');
+                overlay.style.display = 'none'; // 명시적으로 숨김 처리
+
+                if (typeof onConfirm === 'function') {
+                    onConfirm();
+                }
+            };
+        }
+
 
         function escapeHtml(value = '') {
             return String(value)
@@ -653,6 +820,48 @@
                     await fetchSummary();
                 };
             });
+
+            if (addUserForm) {
+                addUserForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    
+
+                    if (!addIdInput || !addPwInput) {
+                        showModal("모든 항목을 입력해 주세요!");
+                        return;
+                    }
+                    const userName = addIdInput.value.trim();
+
+                    try {
+                        const response = await fetch(`${BACKEND_URL}/api/register`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId: addIdInput.value.trim(), password: addPwInput.value.trim(), userName })
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            showModal("유저 추가 성공! 로그인 시켜주세요.", () => {
+                                addUserModal.style.display = 'none';
+                                addUserForm.reset();
+                                fetchUsers();
+                            });
+                        } else {
+                            showModal(data.message || "유저 추가에 실패했습니다.");
+                        }
+                    } catch (err) {
+                        showModal("서버 통신 중 오류가 발생했습니다.{error.message}");
+                    }
+                };
+            }
+
+            addUserBtn.onclick = () => {
+                addUserModal.style.display = 'flex';
+            };
+            closeAddUserModalBtn.onclick = () => {
+                addUserModal.style.display = 'none';
+                addUserForm.reset();
+            };
         }
 
         if (noticeForm) {

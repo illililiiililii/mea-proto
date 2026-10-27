@@ -1,20 +1,42 @@
 @echo off
 
-choice /c YN /n /m "mea-proto install/run start? (Y/N): "
-if errorlevel 2 (
-    echo mea-proto install/run canceled.
-    pause
-    exit /b 1
-) else (
-    echo mea-proto install/run trying...
-    pip install -r requirements.txt
+:choiceir
+echo mea-proto install/run script
+echo.
+echo 1. run mea-proto
+echo 2. install mea-proto
+echo 0. exit
+choice /c 120 /n /m "choose an option (1/2/0): "
 
-    if errorlevel 1 (
-        echo [ERROR] mea-proto install/run failed.
-        pause
-        exit /b 1
-    )
+if %errorlevel%==1 (
+    echo ==========================================
+    echo run mea-proto
+    echo ==========================================
+    echo.
+    pause
+    cls
+    goto runmain
+
+) else if %errorlevel%==2 (
+    echo ==========================================
+    echo mea-proto install
+    echo ==========================================
+    echo.
+    pause
+    cls
+    goto install
+) else (
+    exit /b 0
 )
+
+
+
+
+
+:install
+
+echo mea-proto install trying...
+pip install -r requirements.txt
 
 echo ==========================================
 echo Python module check...
@@ -33,27 +55,46 @@ if not defined MISSING (
     echo ==========================================
     echo.
     pause
-    goto runmain
+    cls
+    goto choiceir
 ) else (
     echo ==========================================
     echo missing required packages: %MISSING%
     echo ==========================================
     echo.
-    pause
-    exit /b 1
+    choice /c yn /n /m "try to reinstall missing packages? (Y/N): "
+    if errorlevel 2 (
+        echo reinstall canceled.
+        pause
+        cls
+        goto choiceir
+    )
+    pip install %MISSING%
+    if errorlevel 1 (
+        echo failed to install missing packages: %MISSING%
+        pause
+        cls
+        goto choiceir
+    )
+    cls
+    goto choiceir
 )
 
+
+
 :runmain
+
 echo ==========================================
 echo run mea-proto
 echo ==========================================
 echo.
 
-
-
 python app.py
+
 pause
-exit /b 0
+goto choiceir
+
+
 
 :CHECK_MODULE
 set "IMPORT_NAME=%~1"
